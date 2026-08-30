@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Net Explorer</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
+:root{--bg:#020617;--bg2:#0f172a;--card:#0b1220;--border:#1e293b;--text:#e2e8f0;--dim:#94a3b8;--chip:#1e293b;--field:#0b1220}
+html[data-theme="light"]{--bg:#eef2f7;--bg2:#fff;--card:#fff;--border:#dbe2ea;--text:#0f172a;--dim:#5b6b7f;--chip:#e8edf3;--field:#fff}
+*{scrollbar-width:thin;scrollbar-color:#475569 transparent}
+::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-thumb{background:#475569;border-radius:3px}
+body{font-family:'Inter',sans-serif;overflow-x:hidden;background:radial-gradient(1200px 600px at 80% -10%,rgba(99,102,241,.12),transparent 60%),radial-gradient(900px 500px at -10% 30%,rgba(16,185,129,.08),transparent 60%),var(--bg);color:var(--text);transition:background-color .4s,color .4s}
+.mono{font-family:'JetBrains Mono',monospace}.dim{color:var(--dim)}.strong{color:var(--text)}
+.surface{background:var(--card);border:1px solid var(--border)}.chip{background:var(--chip);border:1px solid var(--border)}
+.tab-content{display:none}.tab-content.active{display:block;animation:fadeUp .45s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.tab-btn{padding:.55rem 1rem;border-radius:.85rem;font-weight:900;font-size:.68rem;letter-spacing:.02em;transition:all .25s;color:var(--dim);white-space:nowrap}
+.tab-btn:hover{background:rgba(99,102,241,.12);color:var(--text)}
+.tab-btn.active{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff!important;box-shadow:0 6px 18px rgba(99,102,241,.4)}
+.icon-btn{width:40px;height:40px;display:grid;place-items:center;border-radius:.85rem;font-size:17px;cursor:pointer;transition:all .25s;user-select:none}
+.icon-btn:hover{transform:translateY(-2px);border-color:#6366f1}
+.lift{transition:transform .3s,box-shadow .3s,border-color .3s}.lift:hover{transform:translateY(-6px);border-color:#6366f1;box-shadow:0 14px 34px rgba(0,0,0,.35)}
+.cta-btn{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-weight:900;border-radius:1rem;transition:all .25s;box-shadow:0 8px 22px rgba(99,102,241,.35)}
+.cta-btn:hover{transform:translateY(-2px) scale(1.02);box-shadow:0 12px 28px rgba(99,102,241,.5)}.cta-btn:active{transform:scale(.96)}
+.field{width:100%;background:var(--field);color:var(--text);border:1px solid var(--border);border-radius:.8rem;padding:.6rem .75rem;font-family:'JetBrains Mono',monospace;font-size:.82rem;outline:none;transition:border-color .2s,box-shadow .2s}
+.field:focus{border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.25)}
+.field.err{border-color:#ef4444!important;box-shadow:0 0 0 3px rgba(239,68,68,.25)!important;animation:shake .35s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+select.field{font-family:'Inter',sans-serif;font-weight:700;cursor:pointer}option{background:var(--card);color:var(--text)}
+.speed-btn{flex:1;padding:.5rem 0;font-size:.7rem;font-weight:900;text-align:center;border-radius:.6rem;color:var(--dim);cursor:pointer;transition:all .2s;line-height:1}
+.speed-btn.active{background:#6366f1;color:#fff;box-shadow:0 4px 12px rgba(99,102,241,.4)}
+.packet{position:absolute;width:14px;height:14px;border-radius:5px;z-index:40;transform:translate(-50%,-50%);pointer-events:none}
+.packet.request{background:#3b82f6;border:2px solid #fff;box-shadow:0 0 12px rgba(59,130,246,.8)}
+.packet.response{background:#10b981;border:2px solid #fff;box-shadow:0 0 12px rgba(16,185,129,.8)}
+.packet.mini{width:8px;height:8px;border-radius:3px;z-index:39;opacity:.95}
+.wan-node{position:absolute;transform:translate(-50%,-50%);text-align:center;transition:all .4s;z-index:20}
+.wan-node .tag{background:var(--card);border:1px solid var(--border);padding:2px 8px;border-radius:.55rem;box-shadow:0 4px 10px rgba(0,0,0,.25)}
+.wan-node.glow .tag{border-color:#818cf8;box-shadow:0 0 22px rgba(99,102,241,.65)}.wan-node.glow .emoji{transform:scale(1.25)}
+.wan-node .emoji{display:inline-block;transition:transform .25s}
+.ping-pop{position:absolute;z-index:45;transform:translate(-50%,-140%);font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:#34d399;pointer-events:none;animation:pingPop 1s ease-out forwards}
+@keyframes pingPop{0%{opacity:0;margin-top:0}15%{opacity:1}100%{opacity:0;margin-top:-26px}}
+.hud-box{background:var(--card);border:1px solid var(--border);border-radius:.9rem;padding:.5rem .8rem;min-width:80px;backdrop-filter:blur(8px)}
+.hud-val{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:.9rem;color:#a5b4fc}
+.hud-lab{font-size:.55rem;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.net-log{height:72px;overflow-y:auto;font-family:'JetBrains Mono',monospace;font-size:9px;line-height:1.5;background:rgba(2,6,23,.72);border:1px solid var(--border);border-radius:.8rem;padding:.5rem .6rem}
+html[data-theme="light"] .net-log{background:rgba(15,23,42,.92);color:#cbd5e1}
+.net-log .t{color:#64748b}.net-log .req{color:#93c5fd}.net-log .res{color:#6ee7b7}.net-log .warn{color:#fcd34d}.net-log .danger{color:#fda4af}.net-log .sys{color:#94a3b8}
+#dns-alert{background:var(--card);border:3px solid #6366f1}
+#wan-status{background:rgba(2,6,23,.85);border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(10px)}
+.lan-packet{position:absolute;padding:5px 9px;border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:white;white-space:nowrap;z-index:50;pointer-events:none;opacity:0;transform:translate(-50%,-50%);animation:flow-path 3.2s infinite linear;text-transform:uppercase;box-shadow:0 4px 14px rgba(0,0,0,.35);border:2px solid rgba(255,255,255,.25)}
+.lan-packet.request{background:#10b981}.lan-packet.response{background:#3b82f6}
+@keyframes flow-path{0%{opacity:0;top:var(--start-top);left:var(--start-left);transform:translate(-50%,-50%) scale(.7)}10%{opacity:1;transform:translate(-50%,-50%) scale(1)}90%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;top:var(--end-top);left:var(--end-left);transform:translate(-50%,-50%) scale(.7)}}
+.score-row{display:flex;align-items:center;gap:.5rem;padding:.3rem .55rem;border-radius:.6rem;background:var(--chip)}
+.hp-track{flex:1;height:7px;background:rgba(100,116,139,.3);border-radius:99px;overflow:hidden}
+.hp-fill{height:100%;border-radius:99px;background:#10b981;transition:width .35s,background .35s}
+.feed-msg{background:rgba(2,6,23,.88);color:#fecdd3;border:1px solid rgba(244,63,94,.4);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;padding:.3rem .8rem;border-radius:.7rem;animation:feedIn .3s ease both}
+@keyframes feedIn{from{opacity:0;transform:translateY(-10px) scale(.9)}to{opacity:1;transform:translateY(0) scale(1)}}
+.feed-msg.out{transition:opacity .5s,transform .5s;opacity:0!important;transform:translateY(-12px)}
+.server-heart{animation:heartbeat 1.4s ease-in-out infinite;display:inline-block}
+@keyframes heartbeat{0%,100%{transform:scale(1)}12%{transform:scale(1.18)}24%{transform:scale(1)}36%{transform:scale(1.12)}48%{transform:scale(1)}}
+.toast{min-width:240px;max-width:320px;padding:.8rem 1rem;border-radius:1rem;font-size:.8rem;font-weight:700;color:#fff;box-shadow:0 12px 30px rgba(0,0,0,.4);animation:toastIn .35s cubic-bezier(.2,.9,.3,1.3) both}
+.toast.error{background:linear-gradient(135deg,#ef4444,#b91c1c)}.toast.success{background:linear-gradient(135deg,#10b981,#047857)}.toast.info{background:linear-gradient(135deg,#6366f1,#7c3aed)}
+.toast.hide{transition:all .4s;opacity:0;transform:translateX(30px)}
+@keyframes toastIn{from{opacity:0;transform:translateX(60px)}to{opacity:1;transform:translateX(0)}}
+.qopt{width:100%;text-align:left;padding:.75rem 1rem;border-radius:.9rem;font-weight:700;font-size:.85rem;background:var(--chip);border:1.5px solid var(--border);color:var(--text);transition:all .2s;cursor:pointer}
+.qopt:hover:not(:disabled){border-color:#6366f1;transform:translateX(4px)}.qopt:disabled{cursor:default;opacity:.92}
+.qopt.correct{background:rgba(16,185,129,.18);border-color:#10b981;color:#10b981}.qopt.wrong{background:rgba(239,68,68,.15);border-color:#ef4444;color:#ef4444}
+.dot{width:10px;height:10px;border-radius:99px;background:var(--chip);border:1.5px solid var(--border);transition:all .3s}
+.dot.current{border-color:#6366f1;transform:scale(1.3)}.dot.done-good{background:#10b981;border-color:#10b981}.dot.done-bad{background:#ef4444;border-color:#ef4444}
+.cf{position:absolute;top:-12px;border-radius:2px;pointer-events:none;animation:cfFall linear forwards;z-index:60}
+@keyframes cfFall{to{transform:translateY(115vh) rotate(720deg);opacity:.2}}
+input[type="range"]{accent-color:#6366f1}
+
+.flip-card{perspective:1000px;height:220px;cursor:pointer}
+.flip-card-inner{position:relative;width:100%;height:100%;transition:transform .6s cubic-bezier(.4,0,.2,1);transform-style:preserve-3d}
+.flip-card.flipped .flip-card-inner{transform:rotateY(180deg)}
+.flip-card-front,.flip-card-back{position:absolute;inset:0;backface-visibility:hidden;border-radius:1.25rem;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1.25rem;text-align:center}
+.flip-card-front{background:var(--card);border:1.5px solid var(--border)}.flip-card-back{background:var(--card);border:1.5px solid #6366f1;transform:rotateY(180deg)}
+
+.builder-chip{padding:.55rem 1rem;border-radius:.85rem;font-weight:700;font-size:.82rem;cursor:grab;user-select:none;transition:all .2s;background:var(--chip);border:2px solid var(--border);color:var(--text)}
+.builder-chip:active{cursor:grabbing;transform:scale(.95)}.builder-chip.dragging{opacity:.4}.builder-chip.placed{opacity:.35;pointer-events:none;text-decoration:line-through}
+.builder-slot{min-width:120px;min-height:64px;border:2px dashed var(--border);border-radius:1rem;display:flex;align-items:center;justify-content:center;transition:all .3s;background:transparent}
+.builder-slot.drag-over{border-color:#6366f1;background:rgba(99,102,241,.08);transform:scale(1.04)}
+.builder-slot.filled{border-style:solid;border-color:#10b981;background:rgba(16,185,129,.08)}
+.builder-slot.wrong{border-color:#ef4444;background:rgba(239,68,68,.08);animation:shake .4s}
+.builder-slot.correct{border-color:#10b981;background:rgba(16,185,129,.12);box-shadow:0 0 16px rgba(16,185,129,.3)}
+
+.terminal{background:#0a0e14;border:1px solid #1e293b;border-radius:1rem;overflow:hidden}
+.terminal-bar{background:#111827;padding:.5rem .75rem;display:flex;align-items:center;gap:.4rem;border-bottom:1px solid #1e293b}
+.terminal-dot{width:10px;height:10px;border-radius:99px}
+.terminal-body{padding:1rem 1.25rem;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.7;color:#22c55e;overflow-x:auto}
+.detective-value{cursor:pointer;border-bottom:1.5px dashed #22c55e;padding:0 2px;transition:all .2s;border-radius:2px}
+.detective-value:hover{background:rgba(34,197,94,.15)}
+.detective-value.found{background:rgba(34,197,94,.25);border-bottom-style:solid;color:#4ade80;font-weight:700}
+.detective-value.wrong-click{background:rgba(239,68,68,.2);border-bottom-color:#ef4444;animation:shake .3s}
+
+.route-node{position:absolute;transform:translate(-50%,-50%);cursor:pointer;transition:all .3s;text-align:center;z-index:10}
+.route-node:hover{transform:translate(-50%,-50%) scale(1.12)}.route-node.visited{opacity:.45;pointer-events:none}
+.route-node.next{animation:pulseGlow 1s ease-in-out infinite}
+.route-node.wrong-flash{animation:wrongFlash .5s}
+@keyframes pulseGlow{0%,100%{box-shadow:0 0 0 0 rgba(99,102,241,0)}50%{box-shadow:0 0 20px 6px rgba(99,102,241,.5)}}
+@keyframes wrongFlash{0%,100%{filter:none}50%{filter:brightness(2) hue-rotate(30deg)}}
+
+.hop-row{opacity:0;transform:translateX(-16px)}.hop-row.show{animation:hopIn .4s ease forwards}
+@keyframes hopIn{to{opacity:1;transform:translateX(0)}}
+
+.activity-card{padding:.7rem 1rem;border-radius:1rem;border:1.5px solid var(--border);background:var(--chip);transition:all .4s}
+.activity-card.ok{border-color:#10b981}.activity-card.slow{border-color:#f59e0b}.activity-card.dead{border-color:#ef4444}
+
+.pkt-field{font-family:'JetBrains Mono',monospace;padding:.25rem .55rem;border-radius:.5rem;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.3);display:inline-block;min-width:90px;text-align:center;transition:all .3s}
+.pkt-field.choice-field{display:block;text-align:left;width:100%;min-width:0}
+.pkt-field.revealed{background:rgba(16,185,129,.15);border-color:#10b981;color:#10b981}
+.pkt-field.wrong-reveal{background:rgba(239,68,68,.15);border-color:#ef4444;color:#ef4444;animation:shake .4s}
+
+.cable-line{cursor:pointer;transition:all .3s}.cable-line:hover{filter:drop-shadow(0 0 8px currentColor);stroke-width:4}
+.continent{fill:var(--bg2);stroke:var(--border);stroke-width:1}
+
+.task-result{padding:.5rem .75rem;border-radius:.75rem;font-size:.8rem;font-weight:700;transition:all .4s}
+.task-result.good{background:rgba(16,185,129,.12);color:#10b981}.task-result.ok{background:rgba(245,158,11,.12);color:#f59e0b}.task-result.bad{background:rgba(239,68,68,.1);color:#ef4444}
+
+.section-badge{display:inline-flex;align-items:center;gap:.35rem;padding:.25rem .65rem;border-radius:99px;font-size:.6rem;font-weight:900;text-transform:uppercase;letter-spacing:.08em}
+.section-badge.complete{background:rgba(16,185,129,.15);color:#10b981;border:1px solid rgba(16,185,129,.3)}
+.section-badge.pending{background:var(--chip);color:var(--dim);border:1px solid var(--border)}
+
+.arrow-connector{color:var(--dim);font-size:1.5rem;line-height:1}
+</style>
+</head>
+<body class="p-4 md:p-6">
+<div class="max-w-6xl mx-auto">
+<header class="flex flex-wrap items-center justify-between gap-3 mb-6">
+ <div class="flex items-center gap-3">
+  <div class="w-11 h-11 rounded-2xl grid place-items-center text-2xl" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);box-shadow:0 8px 20px rgba(99,102,241,.45)">🌐</div>
+  <div><h1 class="text-lg font-black leading-none tracking-tight">NET EXPLORER</h1><p class="text-[10px] dim font-bold uppercase tracking-[.2em] mt-1">How the internet works</p></div>
+ </div>
+ <nav class="flex space-x-1 p-1 rounded-2xl surface overflow-x-auto">
+  <button onclick="showTab('concept')" id="tab-concept" class="tab-btn active">1 · INTERNET</button>
+  <button onclick="showTab('wan')" id="tab-wan" class="tab-btn">2 · WAN</button>
+  <button onclick="showTab('lan')" id="tab-lan" class="tab-btn">3 · LAN</button>
+
+ </nav>
+ <div class="flex items-center gap-2">
+  <div id="sound-toggle" class="icon-btn chip" title="Toggle sound">🔇</div>
+  <div id="theme-toggle" class="icon-btn chip" title="Toggle theme">☀️</div>
+ </div>
+</header>
+
+<!-- TAB 1 -->
+<div id="content-concept" class="tab-content active">
+ <div class="mb-10 max-w-4xl">
+  <h2 class="text-4xl md:text-5xl font-black mb-4 tracking-tighter strong">What is the <span style="background:linear-gradient(135deg,#818cf8,#34d399);-webkit-background-clip:text;background-clip:text;color:transparent">Internet?</span></h2>
+  <p class="text-lg dim leading-relaxed">A <span class="text-indigo-400 font-bold">global network of networks</span> — billions of devices connected by cables, routers and protocols, all talking to each other in milliseconds. <span class="text-indigo-400 font-bold">Flip each card</span> to reveal the details.</p>
+  <div class="flex flex-wrap gap-6 mt-5">
+   <div><span id="stat-users" class="text-2xl font-black text-indigo-400 mono">0</span><p class="text-[10px] dim font-bold uppercase">People online</p></div>
+   <div><span id="stat-devices" class="text-2xl font-black text-emerald-400 mono">0</span><p class="text-[10px] dim font-bold uppercase">Connected devices</p></div>
+   <div><span id="stat-data" class="text-2xl font-black text-pink-400 mono">0</span><p class="text-[10px] dim font-bold uppercase">GB per minute</p></div>
+  </div>
+ </div>
+
+ <!-- FLIP CARDS -->
+ <div class="mb-12">
+  <div class="flex items-center justify-between mb-5">
+   <div><h3 class="text-2xl font-black strong">The Key Players</h3><p class="dim text-sm">Click each card to reveal the analogy.</p></div>
+   <div id="badge-flip" class="section-badge pending">○ 0/6</div>
+  </div>
+  <div class="grid grid-cols-2 md:grid-cols-3 gap-4" id="flip-grid">
+   <div class="flip-card" onclick="flipCard(this,'client')"><div class="flip-card-inner"><div class="flip-card-front"><div class="text-5xl mb-3">🛒</div><h4 class="font-black text-lg strong">The Customer</h4><p class="text-xs dim mt-1">Your device</p></div><div class="flip-card-back"><h4 class="font-black text-lg text-blue-400 mb-2">💻 Client</h4><p class="text-xs dim leading-relaxed">Your laptop, phone or console sends requests and waits for answers. Like ordering at a restaurant — you ask, they deliver.</p><p class="text-[10px] mono text-blue-300 mt-3">Example: 10.42.3.15<br>Source Port: Random high (49152–65535)</p></div></div></div>
+   <div class="flip-card" onclick="flipCard(this,'server')"><div class="flip-card-inner"><div class="flip-card-front"><div class="text-5xl mb-3">🏭</div><h4 class="font-black text-lg strong">The Warehouse</h4><p class="text-xs dim mt-1">Stores everything</p></div><div class="flip-card-back"><h4 class="font-black text-lg text-emerald-400 mb-2">🏢 Server</h4><p class="text-xs dim leading-relaxed">Powerful computers that store websites, videos and games. Open 24/7, they send data back to any client that asks.</p><p class="text-[10px] mono text-emerald-300 mt-3">Example: 142.250.204.110<br>Dest Port: 443 (HTTPS) / 80 (HTTP)</p></div></div></div>
+   <div class="flip-card" onclick="flipCard(this,'router')"><div class="flip-card-inner"><div class="flip-card-front"><div class="text-5xl mb-3">📮</div><h4 class="font-black text-lg strong">The Post Office</h4><p class="text-xs dim mt-1">Sorts & forwards</p></div><div class="flip-card-back"><h4 class="font-black text-lg text-violet-400 mb-2">📡 Router</h4><p class="text-xs dim leading-relaxed">Reads IP addresses on every packet and forwards it toward the right destination. Your gateway to the internet.</p><p class="text-[10px] mono text-violet-300 mt-3">Example: 10.42.0.1</p></div></div></div>
+   <div class="flip-card" onclick="flipCard(this,'ip')"><div class="flip-card-inner"><div class="flip-card-front"><div class="text-5xl mb-3">🏠</div><h4 class="font-black text-lg strong">Home Address</h4><p class="text-xs dim mt-1">Unique to you</p></div><div class="flip-card-back"><h4 class="font-black text-lg text-blue-400 mb-2">📍 IP Address</h4><p class="text-xs dim leading-relaxed">A unique number for every device on a network. Without it, reply data can never find its way back to you.</p><p class="text-[10px] mono text-blue-300 mt-3">Format: 172.16.x.x</p></div></div></div>
+   <div class="flip-card" onclick="flipCard(this,'dns')"><div class="flip-card-inner"><div class="flip-card-front"><div class="text-5xl mb-3">📒</div><h4 class="font-black text-lg strong">The Phone Book</h4><p class="text-xs dim mt-1">Names → Numbers</p></div><div class="flip-card-back"><h4 class="font-black text-lg text-amber-400 mb-2">📖 DNS</h4><p class="text-xs dim leading-relaxed">Translates <span class="mono">google.com</span> into <span class="mono">142.250.204.110</span>. The internet's phone book.</p><p class="text-[10px] mono text-amber-300 mt-3">Example: 8.8.8.8</p></div></div></div>
+   <div class="flip-card" onclick="flipCard(this,'packets')"><div class="flip-card-inner"><div class="flip-card-front"><div class="text-5xl mb-3">🧩</div><h4 class="font-black text-lg strong">Jigsaw Puzzle</h4><p class="text-xs dim mt-1">Broken into pieces</p></div><div class="flip-card-back"><h4 class="font-black text-lg text-pink-400 mb-2">📦 Packets</h4><p class="text-xs dim leading-relaxed">Data is split into tiny pieces, each labelled with IPs. They can take different routes, then reassemble in order.</p><p class="text-[10px] mono text-pink-300 mt-3">Ports: 443 (HTTPS) / 80 (HTTP)<br>Each packet has a source IP + dest IP</p></div></div></div>
+  </div>
+ </div>
+
+ <!-- BUILD THE INTERNET -->
+ <div class="mb-12">
+  <div class="flex items-center justify-between mb-5">
+   <div><h3 class="text-2xl font-black strong">Build the Internet</h3><p class="dim text-sm">Drag components into the correct order — from your device to the destination.</p></div>
+   <div id="badge-builder" class="section-badge pending">○ Not built</div>
+  </div>
+  <div class="surface rounded-3xl p-6 md:p-8">
+   <div id="builder-tray" class="flex flex-wrap gap-3 justify-center mb-8 min-h-[50px]">
+    <div class="builder-chip" draggable="true" data-component="dns" ondragstart="bDragStart(event)" ondragend="bDragEnd(event)">📖 DNS Server</div>
+    <div class="builder-chip" draggable="true" data-component="router" ondragstart="bDragStart(event)" ondragend="bDragEnd(event)">📡 School Router</div>
+    <div class="builder-chip" draggable="true" data-component="client" ondragstart="bDragStart(event)" ondragend="bDragEnd(event)">💻 Your Computer</div>
+    <div class="builder-chip" draggable="true" data-component="server" ondragstart="bDragStart(event)" ondragend="bDragEnd(event)">🏢 Web Server</div>
+    <div class="builder-chip" draggable="true" data-component="isp" ondragstart="bDragStart(event)" ondragend="bDragEnd(event)">🌐 ISP Router</div>
+   </div>
+   <div class="flex items-center justify-center gap-1 md:gap-2 flex-wrap">
+    <div class="builder-slot" data-slot="0" data-expect="client" ondragover="bDragOver(event)" ondrop="bDrop(event)" ondragleave="bDragLeave(event)"><span class="dim text-[10px]">1. Start</span></div>
+    <span class="arrow-connector hidden md:inline">→</span>
+    <div class="builder-slot" data-slot="1" data-expect="router" ondragover="bDragOver(event)" ondrop="bDrop(event)" ondragleave="bDragLeave(event)"><span class="dim text-[10px]">2.</span></div>
+    <span class="arrow-connector hidden md:inline">→</span>
+    <div class="builder-slot" data-slot="2" data-expect="isp" ondragover="bDragOver(event)" ondrop="bDrop(event)" ondragleave="bDragLeave(event)"><span class="dim text-[10px]">3.</span></div>
+    <span class="arrow-connector hidden md:inline">→</span>
+    <div class="builder-slot" data-slot="3" data-expect="dns" ondragover="bDragOver(event)" ondrop="bDrop(event)" ondragleave="bDragLeave(event)"><span class="dim text-[10px]">4.</span></div>
+    <span class="arrow-connector hidden md:inline">→</span>
+    <div class="builder-slot" data-slot="4" data-expect="server" ondragover="bDragOver(event)" ondrop="bDrop(event)" ondragleave="bDragLeave(event)"><span class="dim text-[10px]">5. End</span></div>
+   </div>
+   <div class="flex gap-3 justify-center mt-6">
+    <button onclick="checkBuilder()" class="cta-btn px-6 py-2.5 text-sm">Check Order</button>
+    <button onclick="resetBuilder()" class="px-5 py-2.5 text-sm font-black rounded-xl chip hover:border-indigo-500 transition-all">Reset</button>
+   </div>
+   <div id="builder-feedback" class="text-center mt-4 text-sm font-bold hidden"></div>
+  </div>
+ </div>
+
+ <!-- INTERNET MESH VISUALIZATION -->
+
+</div>
+
+<!-- TAB 2: WAN -->
+<div id="content-wan" class="tab-content">
+ <div class="mb-6 max-w-4xl">
+  <h2 class="text-3xl md:text-4xl font-black strong mb-2 tracking-tight">Wide Area Network</h2>
+   <p class="dim text-sm leading-relaxed">The internet connects your school network to servers across the world. Find your network details in the detective terminal, then trace a packet!</p>
+ </div>
+
+ <!-- IP DETECTIVE -->
+ <div class="mb-12">
+  <div class="flex items-center justify-between mb-5">
+   <div><h3 class="text-2xl font-black strong">🔍 Step 1 — Find Your IPs</h3><p class="dim text-sm">It will look like this, so click on  the windows button and type 'cmd' then 'ipconfig' you will then see your computers IP Addres and the schools gateway IP</p></div>
+   <div id="badge-detective" class="section-badge pending">○ 0/2</div>
+  </div>
+  <div class="max-w-2xl">
+   <div class="terminal">
+    <div class="terminal-bar">
+     <div class="terminal-dot bg-red-500"></div><div class="terminal-dot bg-yellow-500"></div><div class="terminal-dot bg-green-500"></div>
+     <span class="text-[11px] ml-2 dim">Command Prompt — ipconfig</span>
+     <span id="detective-timer" class="ml-auto mono text-[10px] text-green-400 font-bold"></span>
+    </div>
+    <div class="terminal-body">
+      <div class="text-green-400 mb-1">C:\Users\You&gt; <span class="text-white">ipconfig</span></div>
+      <div class="text-green-200 mt-2">Windows IP Configuration</div>
+      <div>&nbsp;</div>
+      <div class="text-green-300">Wi-Fi adapter Wi-Fi:</div>
+      <div>&nbsp;&nbsp;Connection-specific DNS Suffix&nbsp;: <span class="text-green-400">home.local</span></div>
+      <div>&nbsp;&nbsp;IPv4 Address. . . . . . . . . . : <span class="detective-value" onclick="findValue('ipv4',this)">172.16.19.40</span></div>
+
+      <div>&nbsp;&nbsp;Default Gateway . . . . . . . . : <span class="detective-value" onclick="findValue('gateway',this)">172.16.19.1</span></div>
+      <div>&nbsp;</div>
+      <div class="text-green-300">DNS Servers . . . . . . . . . . :</div>
+
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="text-green-400">8.8.8.8</span></div>
+      <div>&nbsp;</div>
+      <div class="text-green-200">C:\Users\You&gt; <span class="text-white">netstat -n</span></div>
+      <div class="text-green-300 mt-1">&nbsp;&nbsp;TCP&nbsp;&nbsp;&nbsp;172.16.19.40:52431&nbsp;&nbsp;&nbsp;142.250.204.110:443&nbsp;&nbsp;&nbsp;ESTABLISHED</div>
+      <div class="text-green-300">&nbsp;&nbsp;TCP&nbsp;&nbsp;&nbsp;172.16.19.40:49200&nbsp;&nbsp;&nbsp;93.184.216.34:80&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ESTABLISHED</div>
+      <div class="mt-2 text-green-400">C:\Users\You&gt; <span class="inline-block w-2 h-4 bg-green-400 animate-pulse"></span></div>
+    </div>
+   </div>
+   <div class="mt-3 flex flex-wrap gap-2" id="detective-checklist">
+    <span class="chip px-3 py-1.5 rounded-xl text-[11px] font-bold" id="dc-ipv4">☐ IPv4 Address</span>
+
+    <span class="chip px-3 py-1.5 rounded-xl text-[11px] font-bold" id="dc-gateway">☐ Default Gateway</span>
+
+   </div>
+  </div>
+ </div>
+
+ <!-- WAN TRACE -->
+ <div class="mb-12">
+  <div class="flex items-center justify-between mb-5">
+    <div><h3 class="text-2xl font-black strong">🌍 Step 2 — Trace a Packet</h3><p class="dim text-sm">Enter your network details and watch data travel from your home to YouTube, TikTok, Roblox, Netflix and more.</p></div>
+   <div id="badge-wan" class="section-badge pending">○ Not traced</div>
+  </div>
+  <div class="grid lg:grid-cols-4 gap-6">
+   <div class="lg:col-span-1 space-y-3 surface p-5 rounded-3xl h-fit">
+    <div class="space-y-1"><label class="text-[10px] font-bold dim uppercase">Your Machine IP</label><input type="text" id="wan-ip" class="field" placeholder="e.g. 172.16.19.40"></div>
+     <div class="space-y-1"><label class="text-[10px] font-bold dim uppercase">School Router (Gateway)</label><input type="text" id="wan-gateway" class="field" placeholder="e.g. 172.16.19.1"></div>
+     <div class="space-y-1"><label class="text-[10px] font-bold dim uppercase">ISP Router</label><input type="text" id="wan-isp" class="field" placeholder="e.g. 202.158.3.1"></div>
+    <div class="space-y-1"><label class="text-[10px] font-bold dim uppercase">Destination</label><select id="wan-dest" class="field" onchange="updateWanIpDisplays()"></select></div>
+    <div class="space-y-1"><label class="text-[10px] font-bold dim uppercase">Speed</label>
+     <div class="flex gap-1 p-1 rounded-xl chip"><div class="speed-btn" data-speed="0.6">0.6x</div><div class="speed-btn active" data-speed="1">1x</div><div class="speed-btn" data-speed="1.8">2x</div><div class="speed-btn" data-speed="3">3x</div></div>
+    </div>
+    <button id="trace-btn" onclick="toggleWanTrace()" class="w-full cta-btn py-3 text-sm">Trace Packet</button>
+   </div>
+   <div class="lg:col-span-3 surface rounded-3xl min-h-[460px] relative overflow-hidden" id="wan-viz">
+    <svg id="wan-svg" class="absolute inset-0 w-full h-full opacity-40"></svg>
+    <div id="wan-nodes" class="absolute inset-0"></div>
+    <div id="wan-packet" class="packet opacity-0"></div>
+    <div class="absolute top-4 left-4 flex gap-2 z-30">
+     <div class="hud-box text-center"><div id="hud-ping" class="hud-val">— ms</div><div class="hud-lab">Ping</div></div>
+     <div class="hud-box text-center"><div id="hud-pkts" class="hud-val">0</div><div class="hud-lab">Packets</div></div>
+     <div class="hud-box text-center"><div id="hud-mb" class="hud-val">0 KB</div><div class="hud-lab">Data</div></div>
+    </div>
+    <div id="dns-alert" class="hidden absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 p-8 rounded-[2.5rem] shadow-2xl z-50 text-center"><div class="text-4xl mb-2">📖✅</div><p class="font-black text-xl strong">DNS Resolved!</p><p id="dns-msg" class="dim text-sm mt-2 mono"></p></div>
+    <div class="absolute bottom-4 left-4 right-4 z-30"><div class="text-[9px] font-black uppercase tracking-widest dim mb-1">Live packet log</div><div id="wan-log" class="net-log"></div></div>
+    <div id="wan-status" class="absolute bottom-24 left-1/2 -translate-x-1/2 px-5 py-2.5 rounded-2xl shadow-2xl z-40 transition-all opacity-0 flex items-center gap-3"><div class="w-3 h-3 bg-indigo-500 rounded-full animate-pulse"></div><span id="wan-status-text" class="text-xs font-black uppercase tracking-widest text-white">IDLE</span></div>
+   </div>
+  </div>
+ </div>
+
+  <!-- TRACEROUTE -->
+  <div class="mb-12">
+   <div class="flex items-center justify-between mb-5">
+    <div><h3 class="text-2xl font-black strong">📡 Traceroute — Every Hop</h3><p class="dim text-sm">Watch every router your data passes through.</p></div>
+    <div id="badge-traceroute" class="section-badge pending">○ Not traced</div>
+   </div>
+   <div class="surface rounded-3xl p-6">
+    <div class="flex gap-3 mb-5">
+     <input type="text" id="tr-input" class="field flex-1" placeholder="e.g. google.com, tiktok.com, discord.com" onkeydown="if(event.key==='Enter')startTraceroute()">
+     <button onclick="startTraceroute()" class="cta-btn px-6 py-2.5 text-sm whitespace-nowrap">Trace</button>
+    </div>
+     <div id="tr-output" class="space-y-1.5 max-h-[340px] overflow-y-auto pr-2"></div>
+    </div>
+   </div>
+
+   <!-- FULL JOURNEY + TRAFFIC JAM (revealed after trace) -->
+  <div id="wan-revealed-sections" class="hidden">
+
+   <a href="https://www.submarinecablemap.com/" target="_blank" rel="noopener noreferrer" class="mb-8 inline-flex items-center gap-2 cta-btn px-6 py-2.5 text-sm">
+    🌊 Explore the Submarine Cable Map
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+   </a>
+
+   <!-- FULL JOURNEY -->
+   <div class="mb-12">
+    <div class="flex items-center justify-between mb-5">
+     <div><h3 class="text-2xl font-black strong">🕸️ Home → Service — The Full Journey</h3><p class="dim text-sm">Watch packets leave your device, travel through your router, ISP, backbone cables, and reach YouTube, TikTok, Roblox and more. Click any node for details.</p></div>
+     <div id="badge-mesh" class="section-badge pending">○ Explore</div>
+    </div>
+    <div class="surface rounded-3xl p-4 md:p-6 relative overflow-hidden">
+     <canvas id="mesh-canvas" class="w-full rounded-2xl" style="min-height:520px;cursor:crosshair"></canvas>
+     <div class="absolute top-5 left-5 z-30 flex flex-wrap gap-2">
+      <div class="hud-box flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full" style="background:#38bdf8"></span><span class="text-[8px] font-black uppercase">Your Device</span></div>
+      <div class="hud-box flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full" style="background:#a78bfa"></span><span class="text-[8px] font-black uppercase">School Router</span></div>
+      <div class="hud-box flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full" style="background:#f59e0b"></span><span class="text-[8px] font-black uppercase">ISP</span></div>
+      <div class="hud-box flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full" style="background:#6366f1"></span><span class="text-[8px] font-black uppercase">Backbone</span></div>
+      <div class="hud-box flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full" style="background:#ec4899"></span><span class="text-[8px] font-black uppercase">Exchange / CDN</span></div>
+      <div class="hud-box flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full" style="background:#10b981"></span><span class="text-[8px] font-black uppercase">Server</span></div>
+     </div>
+     <div class="absolute bottom-5 right-5 z-30 flex flex-col gap-2">
+      <button onclick="meshAddBurst()" class="hud-box text-[9px] font-black uppercase tracking-widest dim hover:text-white transition-colors cursor-pointer">+ Burst</button>
+      <button onclick="meshToggleAuto()" id="mesh-auto-btn" class="hud-box text-[9px] font-black uppercase tracking-widest dim hover:text-white transition-colors cursor-pointer">⏸ Auto</button>
+      <button onclick="meshReset()" class="hud-box text-[9px] font-black uppercase tracking-widest dim hover:text-white transition-colors cursor-pointer">↻ Reset</button>
+      <button onclick="meshTogglePath()" id="mesh-path-btn" class="hud-box text-[9px] font-black uppercase tracking-widest dim hover:text-white transition-colors cursor-pointer">⚡ Trace</button>
+     </div>
+     <div class="absolute top-5 right-5 z-30 flex gap-2">
+      <div class="hud-box text-center"><div id="mesh-pkts" class="hud-val">0</div><div class="hud-lab">Packets</div></div>
+      <div class="hud-box text-center"><div id="mesh-hop" class="hud-val">—</div><div class="hud-lab">Hop</div></div>
+      <div class="hud-box text-center"><div id="mesh-latency" class="hud-val">—</div><div class="hud-lab">Latency</div></div>
+     </div>
+     <div id="mesh-tooltip" class="hidden absolute z-50 pointer-events-none px-4 py-3 rounded-2xl shadow-2xl" style="background:rgba(11,18,32,.95);border:1.5px solid #6366f1;backdrop-filter:blur(12px);max-width:260px">
+      <div id="mesh-tip-title" class="font-black text-sm strong"></div>
+      <div id="mesh-tip-info" class="text-[10px] dim mt-1 mono leading-relaxed"></div>
+     </div>
+     <div id="mesh-hop-bar" class="absolute bottom-5 left-5 z-30 hidden">
+      <div class="hud-box px-4 py-2 flex items-center gap-3">
+       <span class="text-[9px] font-black uppercase dim">Path:</span>
+       <div id="mesh-hop-dots" class="flex items-center gap-1"></div>
+      </div>
+     </div>
+    </div>
+   </div>
+
+   <!-- TRAFFIC JAM -->
+   <div class="mb-12">
+    <div class="flex items-center justify-between mb-5">
+     <div><h3 class="text-2xl font-black strong">🚗💨 Internet Traffic Jam</h3><p class="dim text-sm">Add devices and watch the network struggle.</p></div>
+     <div id="badge-traffic" class="section-badge pending">○ Tried</div>
+    </div>
+    <div class="surface rounded-3xl p-6">
+     <div class="flex items-center gap-4 mb-5">
+      <label class="text-sm font-bold whitespace-nowrap">Devices:</label>
+      <input type="range" min="1" max="20" value="1" id="traffic-slider" class="flex-1" oninput="updateTrafficJam()">
+      <span id="traffic-count" class="mono font-black text-xl text-indigo-400 w-8 text-center">1</span>
+     </div>
+     <div id="traffic-devices-display" class="flex flex-wrap gap-1 mb-5 min-h-[32px]"></div>
+     <div class="grid md:grid-cols-2 gap-4 mb-4">
+      <div class="surface rounded-2xl p-4"><div class="flex items-center justify-between mb-2"><span class="text-[10px] font-black uppercase tracking-widest dim">Bandwidth (100 Mbps)</span><span id="traffic-per-device" class="mono text-xs text-indigo-400 font-bold">100 Mbps each</span></div><div id="traffic-bw-bar" class="h-7 rounded-xl overflow-hidden flex bg-gray-800/50"></div></div>
+      <div class="surface rounded-2xl p-4"><div class="flex items-center justify-between mb-2"><span class="text-[10px] font-black uppercase tracking-widest dim">Latency</span><span id="traffic-latency-val" class="mono text-xs font-bold" style="color:#10b981">5 ms</span></div><div class="h-4 bg-gray-800/50 rounded-full overflow-hidden"><div id="traffic-latency-bar" class="h-full rounded-full transition-all duration-500" style="width:5%;background:#10b981"></div></div></div>
+     </div>
+     <div class="grid grid-cols-2 md:grid-cols-4 gap-3" id="traffic-activities"></div>
+    </div>
+   </div>
+
+  </div>
+ </div>
+
+<!-- TAB 3: LAN -->
+<div id="content-lan" class="tab-content">
+ <div class="mb-8 max-w-4xl">
+   <h2 class="text-4xl font-black strong mb-4 tracking-tighter">Home (LAN)</h2>
+   <div class="rounded-[2rem] shadow-xl p-6 border border-indigo-500/30 bg-indigo-600/10">
+    <p class="leading-relaxed" style="color:var(--text)">A <span class="text-indigo-400 font-bold">Local Area Network (LAN)</span> connects devices within your home. Data never leaves your router.</p>
+    <div class="grid md:grid-cols-2 gap-4 mt-4">
+     <div class="p-4 rounded-2xl border border-indigo-500/20 bg-indigo-900/20"><p class="text-[11px] font-black text-indigo-400 uppercase mb-1">🎮 Gaming Example</p><p class="text-xs dim">Multiple devices on your home Wi-Fi playing an online game together.</p></div>
+     <div class="p-4 rounded-2xl border border-indigo-500/20 bg-indigo-900/20"><p class="text-[11px] font-black text-indigo-400 uppercase mb-1">📺 Streaming Example</p><p class="text-xs dim">Casting from your phone to your TV via Chromecast — never leaves your home.</p></div>
+   </div>
+  </div>
+ </div>
+ <div class="grid lg:grid-cols-4 gap-6">
+  <div class="lg:col-span-1 space-y-4 surface p-6 rounded-3xl h-fit">
+   <h3 class="font-black text-emerald-400 uppercase text-xs tracking-widest">Local Simulation</h3>
+    <p class="text-xs dim leading-relaxed">The <strong class="strong">Home Server</strong> acts as intermediary, syncing everyone's stats in real-time.</p>
+   <button id="lan-btn" onclick="toggleLan()" class="w-full py-4 text-white font-black rounded-2xl shadow-lg transition-all active:scale-95" style="background:#059669">Start Game Traffic</button>
+   <p class="text-[10px] dim leading-relaxed">🎯 Every hit and respawn is a real packet on the LAN.</p>
+  </div>
+  <div class="lg:col-span-3 surface rounded-3xl min-h-[560px] relative overflow-hidden" id="lan-viz">
+   <svg id="lan-svg" class="absolute inset-0 w-full h-full opacity-40"></svg>
+   <div id="lan-nodes" class="absolute inset-0"></div>
+   <div id="lan-feed" class="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-1.5 pointer-events-none w-full px-4"></div>
+   <div class="absolute top-4 right-4 w-60 surface rounded-2xl p-3 z-30 shadow-xl" id="lan-scoreboard">
+    <div class="flex items-center justify-between mb-2"><span class="text-[10px] font-black uppercase tracking-widest text-emerald-400">Scoreboard</span><span id="lan-clock" class="mono text-[10px] dim">00:00</span></div>
+    <div id="lan-score-rows" class="space-y-1.5"></div>
+    </div>
+    <div class="absolute bottom-4 left-4 right-4 z-30"><div class="text-[9px] font-black uppercase tracking-widest dim mb-1">Server console</div><div id="lan-log" class="net-log"></div></div>
+   </div>
+  </div>
+
+ <!-- QUIZ (LAN tab) -->
+ <div id="quiz-card" class="surface rounded-[3rem] p-8 md:p-10 mb-12 relative overflow-hidden scroll-mt-6">
+  <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6 relative z-10">
+   <div><h3 class="text-3xl font-black strong">🧠 Packet Master Quiz</h3><p class="dim text-sm mt-1">Eight questions — how fast can you answer?</p></div>
+   <div id="quiz-progress" class="flex gap-2"></div>
+  </div>
+  <div id="quiz-body" class="relative z-10"></div>
+ </div>
+</div>
+
+<div id="toast-wrap" class="fixed bottom-6 right-6 z-[100] flex flex-col gap-2 items-end"></div>
+<script>
+const $=id=>document.getElementById(id);
+
+/* ===== SOUND ===== */
+const Sound={enabled:false,ctx:null,ensure(){if(!this.ctx){try{this.ctx=new(window.AudioContext||window.webkitAudioContext)()}catch(e){return false}}if(this.ctx.state==='suspended')this.ctx.resume();return true},tone(f,dur=.08,type='sine',vol=.04,when=0){if(!this.enabled||!this.ensure())return;const t=this.ctx.currentTime+when,o=this.ctx.createOscillator(),g=this.ctx.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(vol,t),g.gain.exponentialRampToValueAtTime(.0001,t+dur),o.connect(g).connect(this.ctx.destination),o.start(t),o.stop(t+dur+.02)},hop(){this.tone(520+Math.random()*240,.06)},good(){[523,659,784].forEach((f,i)=>this.tone(f,.14,'triangle',.05,i*.09))},bad(){this.tone(160,.25,'sawtooth',.04);this.tone(120,.3,'sawtooth',.03,.06)},pop(){this.tone(880,.05,'square',.02)},fanfare(){[523,659,784,1046].forEach((f,i)=>this.tone(f,.2,'triangle',.06,i*.12))},click(){this.tone(660,.04,'sine',.03)}};
+
+/* ===== TOAST ===== */
+function showToast(msg,type='info'){const t=document.createElement('div');t.className=`toast ${type}`;t.innerHTML=msg;$('toast-wrap').appendChild(t);setTimeout(()=>{t.classList.add('hide');setTimeout(()=>t.remove(),450)},3200)}
+
+/* ===== THEME ===== */
+function applyTheme(t){document.documentElement.dataset.theme=t;try{localStorage.setItem('ne-theme',t)}catch(e){}$('theme-toggle').textContent=t==='dark'?'☀️':'🌙'}
+function toggleTheme(){applyTheme(document.documentElement.dataset.theme==='dark'?'light':'dark')}
+
+/* ===== TABS ===== */
+let statsShown=false;
+let wanRevealed=false;
+function showTab(id){document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));$('content-'+id).classList.add('active');$('tab-'+id).classList.add('active');if(id==='concept'&&!statsShown)runStats();if(id==='wan')initWan();if(id==='lan')initLan();if(id==='wan'&&wanRevealed)setTimeout(()=>meshInit(),100)}
+function revealWanSections(){if(wanRevealed)return;wanRevealed=true;$('wan-revealed-sections').classList.remove('hidden');setTimeout(()=>meshInit(),150);showToast('🕸️ New sections unlocked!','success');Sound.fanfare()}
+
+/* ===== STATS ===== */
+function runStats(){statsShown=true;[{el:'stat-users',to:5.56,dec:2,suf:'B'},{el:'stat-devices',to:18.8,dec:1,suf:'B'},{el:'stat-data',to:5.9,dec:1,suf:'M'}].forEach(s=>{const n=$(s.el),st=performance.now(),dur=1600;(function tick(now){const p=Math.min(1,(now-st)/dur),e=1-Math.pow(1-p,3);n.textContent=(s.to*e).toFixed(s.dec)+s.suf;if(p<1)requestAnimationFrame(tick)})(performance.now())})}
+
+/* ===== FLIP CARDS ===== */
+let flippedCards=new Set();
+function flipCard(el,id){el.classList.toggle('flipped');Sound.click();if(el.classList.contains('flipped'))flippedCards.add(id);$('badge-flip').className='section-badge '+(flippedCards.size>=6?'complete':'pending');$('badge-flip').textContent=(flippedCards.size>=6?'✓':'○')+' '+flippedCards.size+'/6 discovered'}
+
+/* ===== BUILDER GAME ===== */
+let builderSlots=[null,null,null,null,null];
+const BUILDER_LABELS={client:'💻 Your Computer',router:'📡 School Router',isp:'🌐 ISP Router',dns:'📖 DNS Server',server:'🏢 Web Server'};
+function bDragStart(e){e.dataTransfer.setData('text/plain',e.target.dataset.component);e.target.classList.add('dragging')}
+function bDragEnd(e){e.target.classList.remove('dragging')}
+function bDragOver(e){e.preventDefault();e.currentTarget.classList.add('drag-over')}
+function bDragLeave(e){e.currentTarget.classList.remove('drag-over')}
+function bDrop(e){e.preventDefault();const slot=e.currentTarget,comp=e.dataTransfer.getData('text/plain');slot.classList.remove('drag-over');const idx=parseInt(slot.dataset.slot);if(builderSlots[idx])return;builderSlots[idx]=comp;slot.innerHTML=`<span class="slot-content">${BUILDER_LABELS[comp]}</span>`;slot.classList.add('filled');document.querySelector(`.builder-chip[data-component="${comp}"]`).classList.add('placed');Sound.pop()}
+function checkBuilder(){const correct=['client','router','isp','dns','server'];let allCorrect=true;document.querySelectorAll('.builder-slot').forEach((s,i)=>{s.classList.remove('correct','wrong');if(builderSlots[i]===correct[i])s.classList.add('correct');else{allCorrect=false;s.classList.add('wrong')}});const fb=$('builder-feedback');fb.classList.remove('hidden');if(allCorrect){fb.innerHTML='🎉 <span style="color:#10b981">Perfect! You built the internet!</span>';fb.innerHTML+='<br><span class="dim text-xs">Your data flows: Computer → Router → ISP → DNS (looks up name) → Server (delivers content)</span>';Sound.fanfare();$('badge-builder').className='section-badge complete';$('badge-builder').textContent='✓ Built!';showToast('🎉 Internet built correctly!','success');confettiBurst($('builder-feedback').parentElement)}else{fb.innerHTML='❌ <span style="color:#ef4444">Not quite — look at the highlighted slots and try again.</span>';Sound.bad()}}
+function resetBuilder(){builderSlots=[null,null,null,null,null];document.querySelectorAll('.builder-slot').forEach((s,i)=>{s.classList.remove('filled','correct','wrong');s.innerHTML=`<span class="dim text-[10px]">${i===0?'1. Start':i===4?'5. End':(i+1)+'.'}</span>`});document.querySelectorAll('.builder-chip').forEach(c=>c.classList.remove('placed'));$('builder-feedback').classList.add('hidden')}
+
+/* ===== IP DETECTIVE ===== */
+let detectiveFound=new Set(),detectiveStarted=false,detectiveTimer=null,detectiveStart=0;
+const DETECTIVE_INFO={ipv4:{label:'IPv4 Address',explain:'Your unique address on your home network — like your house number on the street.'},gateway:{label:'Default Gateway',explain:'Your home router — the device that connects your network to the wider internet.'}};
+function findValue(what,el){if(detectiveFound.has(what))return;if(!detectiveStarted){detectiveStarted=true;detectiveStart=Date.now();detectiveTimer=setInterval(()=>{$('detective-timer').textContent=((Date.now()-detectiveStart)/1000).toFixed(1)+'s'},100)}el.classList.add('found');detectiveFound.add(what);Sound.good();$('dc-'+what).innerHTML='✅ '+DETECTIVE_INFO[what].label;$('dc-'+what).style.background='rgba(16,185,129,.12)';$('dc-'+what).style.color='#10b981';$('badge-detective').className='section-badge '+(detectiveFound.size>=2?'complete':'pending');$('badge-detective').textContent=(detectiveFound.size>=2?'✓':'○')+' '+detectiveFound.size+'/2 found';if(detectiveFound.size>=2){clearInterval(detectiveTimer);const time=((Date.now()-detectiveStart)/1000).toFixed(1);showToast(`🔍 All 2 found in ${time}s!`,'success');Sound.fanfare()}}
+
+/* ===== WAN ===== */
+let wanStreaming=false,wanSpeedMult=1,wanPkts=0,wanMB=0;
+const DESTINATIONS={google:{ip:'142.250.204.110',streaming:false,icon:'🔍',label:'Google',dataType:'Search & Web',ping:[15,30],chunk:[1,3]},tiktok:{ip:'157.240.22.35',streaming:true,icon:'🎵',label:'TikTok',dataType:'Short Form Video',ping:[22,45],chunk:[3,7]},youtube:{ip:'142.250.190.46',streaming:true,icon:'📺',label:'YouTube',dataType:'Video Stream',ping:[20,50],chunk:[4,9]},netflix:{ip:'52.3.144.148',streaming:true,icon:'🍿',label:'Netflix',dataType:'Movies & Shows',ping:[35,70],chunk:[5,11]},instagram:{ip:'157.240.22.174',streaming:true,icon:'📸',label:'Instagram',dataType:'Photos & Reels',ping:[20,42],chunk:[2,6]},snapchat:{ip:'199.231.210.10',streaming:true,icon:'👻',label:'Snapchat',dataType:'Snaps & Stories',ping:[18,38],chunk:[1,4]},roblox:{ip:'128.116.114.3',streaming:true,icon:'🧱',label:'Roblox',dataType:'Game Data',ping:[26,52],chunk:[.05,.12]},minecraft:{ip:'172.67.135.201',streaming:true,icon:'⛏️',label:'Minecraft',dataType:'Game Data',ping:[25,50],chunk:[.02,.07]},discord:{ip:'162.159.130.233',streaming:false,icon:'💬',label:'Discord',dataType:'Messages',ping:[15,30],chunk:[.05,.2]}};
+const wanCfg={you:{x:13,y:70,icon:'💻',label:'Your PC',color:'#3b82f6'},router:{x:33,y:70,icon:'📡',label:'School Router',color:'#6366f1'},isp:{x:52,y:38,icon:'🌐',label:'ISP',color:'#8b5cf6'},dns:{x:70,y:14,icon:'📖',label:'DNS Server',color:'#f59e0b'},server:{x:86,y:70,icon:'🏢',label:'Destination',color:'#10b981'}};
+function initWan(){const sel=$('wan-dest');if(!sel.options.length){Object.entries(DESTINATIONS).forEach(([k,d])=>{const o=document.createElement('option');o.value=k;o.textContent=`${d.icon} ${d.label} (${d.dataType})`;sel.appendChild(o)})}const c=$('wan-nodes'),svg=$('wan-svg');c.innerHTML='';svg.innerHTML='';Object.entries(wanCfg).forEach(([id,n])=>{const nd=document.createElement('div');nd.className='wan-node';nd.style.left=n.x+'%';nd.style.top=n.y+'%';nd.id='wan-node-'+id;nd.innerHTML=`<div class="emoji text-3xl filter drop-shadow-md mb-1">${n.icon}</div><div class="tag"><div id="wan-ld-${id}" class="text-[9px] font-black uppercase tracking-tight dim">${n.label}</div><div id="wan-ipd-${id}" class="text-[8px] mono text-indigo-400 font-bold overflow-hidden text-ellipsis max-w-[90px]">...</div></div>`;c.appendChild(nd)});drawWanLines(svg);resetWanHud();updateWanIpDisplays();$('wan-log').innerHTML='';netLog($('wan-log'),'WAN simulator ready. Enter IPs and trace!','sys')}
+function drawWanLines(svg){const ec=getComputedStyle(document.documentElement).getPropertyValue('--border').trim()||'#1e293b';[['you','router'],['router','isp'],['isp','dns'],['isp','server']].forEach(([a,b])=>{const l=document.createElementNS('http://www.w3.org/2000/svg','line');l.setAttribute('x1',wanCfg[a].x+'%');l.setAttribute('y1',wanCfg[a].y+'%');l.setAttribute('x2',wanCfg[b].x+'%');l.setAttribute('y2',wanCfg[b].y+'%');l.setAttribute('stroke',ec);l.setAttribute('stroke-width','3');l.setAttribute('stroke-dasharray','8,4');svg.appendChild(l)})}
+function resetWanHud(){wanPkts=0;wanMB=0;$('hud-ping').textContent='— ms';$('hud-pkts').textContent='0';$('hud-mb').textContent='0 KB'}
+function fmtBytes(mb){return mb>=1?mb.toFixed(1)+' MB':Math.round(mb*1024)+' KB'}
+function updateWanIpDisplays(){$('wan-ipd-you').textContent=$('wan-ip').value||'172.16.19.40';$('wan-ipd-router').textContent=$('wan-gateway').value||'10.0.0.1';$('wan-ipd-isp').textContent=$('wan-isp').value||'202.158.3.1';$('wan-ipd-dns').textContent='8.8.8.8';const d=DESTINATIONS[$('wan-dest').value];$('wan-ipd-server').textContent=d.ip;$('wan-ld-server').textContent=d.label;const sn=$('wan-node-server');if(sn)sn.querySelector('.emoji').textContent=d.icon}
+function glowNode(id){const n=$('wan-node-'+id);if(!n)return;n.classList.add('glow');setTimeout(()=>n.classList.remove('glow'),420)}
+function pingPop(nodeId,val){const viz=$('wan-viz'),node=$('wan-node-'+nodeId);if(!viz||!node)return;const vr=viz.getBoundingClientRect(),nr=node.getBoundingClientRect();const p=document.createElement('div');p.className='ping-pop';p.textContent=val+'ms';p.style.left=(nr.left-vr.left+nr.width/2)+'px';p.style.top=(nr.top-vr.top)+'px';viz.appendChild(p);setTimeout(()=>p.remove(),1000)}
+function spawnMini(fromId,toId,kind,delay=0){const viz=$('wan-viz'),a=$('wan-node-'+fromId),b=$('wan-node-'+toId);if(!viz||!a||!b)return;const vr=viz.getBoundingClientRect(),ca=a.getBoundingClientRect(),cb=b.getBoundingClientRect();const x1=ca.left-vr.left+ca.width/2,y1=ca.top-vr.top+ca.height/2,x2=cb.left-vr.left+cb.width/2,y2=cb.top-vr.top+cb.height/2;const m=document.createElement('div');m.className='packet mini '+kind;m.style.left=x1+'px';m.style.top=y1+'px';m.style.opacity='0';viz.appendChild(m);setTimeout(()=>{m.style.opacity='1';const dx=x2-x1,dy=y2-y1;const an=m.animate([{transform:'translate(-50%,-50%)'},{transform:`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px))`}],{duration:520/wanSpeedMult,easing:'ease-in-out'});an.onfinish=()=>{m.remove();wanPkts++;$('hud-pkts').textContent=wanPkts}},delay)}
+function burstLeg(a,b,kind){const n=wanSpeedMult>=1.8?4:3;for(let i=0;i<n;i++)spawnMini(a,b,kind,i*130)}
+function netLog(c,msg,cls='sys'){const t=new Date().toLocaleTimeString([],{hour12:false}),r=document.createElement('div');r.innerHTML=`<span class="t">[${t}]</span> <span class="${cls}">${msg}</span>`;c.appendChild(r);while(c.children.length>40)c.firstChild.remove();c.scrollTop=c.scrollHeight}
+async function toggleWanTrace(){if(!$('wan-ip').value.trim()||!$('wan-gateway').value.trim()||!$('wan-isp').value.trim()){showToast('⚠️ Enter all three IP addresses!','error');Sound.bad();['wan-ip','wan-gateway','wan-isp'].forEach(id=>{const el=$(id);if(!el.value.trim()){el.classList.add('err');setTimeout(()=>el.classList.remove('err'),2500)}});return}if(wanStreaming){wanStreaming=false;$('trace-btn').innerText='Trace Packet';$('trace-btn').style.background='';$('wan-status').style.opacity=0;$('wan-packet').style.opacity=0;netLog($('wan-log'),'Stream stopped.','warn');return}updateWanIpDisplays();resetWanHud();const dk=$('wan-dest').value,d=DESTINATIONS[dk];if(d.streaming){wanStreaming=true;$('trace-btn').innerText='⏹ Stop';$('trace-btn').style.background='linear-gradient(135deg,#ef4444,#b91c1c)';netLog($('wan-log'),`${d.label} — continuous packets!`,'warn')}else netLog($('wan-log'),`Single request to ${d.label}...`,'sys');const p=$('wan-packet');p.style.transition='none';p.style.left=wanCfg.you.x+'%';p.style.top=wanCfg.you.y+'%';p.style.opacity='1';setTimeout(()=>p.style.transition='',50);await runTraceOnce(dk);while(wanStreaming){await runTraceOnce(dk,true);if(!wanStreaming)break}}
+async function runTraceOnce(dk,dataOnly=false){const p=$('wan-packet'),st=$('wan-status'),stx=$('wan-status-text'),log=$('wan-log'),d=DESTINATIONS[dk],sp=wanSpeedMult;const step=async(nk,type,baseDur,text,logMsg,cls)=>{if(text){st.style.opacity=1;stx.innerText=text}glowNode(nk);const pv=Math.round(d.ping[0]+Math.random()*(d.ping[1]-d.ping[0])+Math.random()*10-5);if(type==='request'){$('hud-ping').textContent=pv+' ms';$('hud-ping').style.color=pv>60?'#fda4af':'#a5b4fc';pingPop(nk,pv)}p.className='packet '+type+' transition-all';p.style.transitionDuration=(baseDur/sp)+'ms';p.style.left=wanCfg[nk].x+'%';p.style.top=wanCfg[nk].y+'%';Sound.hop();if(logMsg)netLog(log,logMsg,cls);await new Promise(r=>setTimeout(r,baseDur/sp+90/sp))};if(!dataOnly){await step('you','request',600,'DNS lookup...','"'+d.label+'"? Asking DNS...','req');await step('router','request',600,'School Router forwarding...','Packet → School Router','req');await step('isp','request',600,'Querying DNS...','Gateway → ISP → DNS','req');await step('dns','request',600,'Resolving name...','DNS: name → IP','req');$('dns-msg').innerText=d.label+' → '+d.ip;$('dns-alert').classList.remove('hidden');Sound.good();await new Promise(r=>setTimeout(r,1200/sp));$('dns-alert').classList.add('hidden');await step('isp','response',600,'Address resolved!','DNS answered: '+d.ip,'res');await step('router','response',600,'Router got IP...','Response → School Router','res');await step('you','response',600,'Got target IP!','PC knows destination IP ✔','res')}const v=dataOnly?'Streaming':'Requesting';await step('you','request',700,v+' from '+d.label+'...','REQUEST → '+d.label,'req');await step('router','request',700,'School Router forwarding...','Router → ISP','req');await step('isp','request',700,'ISP forwarding...','ISP → global internet 🌏','req');burstLeg('isp','server','request');await step('server','request',700,'Reached!','ARRIVED at '+d.label+' server','req');await new Promise(r=>setTimeout(r,350/sp));await step('server','response',700,'Sending data...','Server → '+d.dataType,'res');burstLeg('server','isp','response');const ch=d.chunk[0]+Math.random()*(d.chunk[1]-d.chunk[0]);wanMB+=ch;$('hud-mb').textContent=fmtBytes(wanMB);await step('isp','response',700,'Receiving...','+'+fmtBytes(ch)+' (total '+fmtBytes(wanMB)+')','res');burstLeg('isp','router','response');await step('router','response',700,'Passing through...','Gateway → Your PC','res');await step('you','response',700,'Data arrived! 🎉','Packets reassembled ✔','res');if(!wanStreaming)st.style.opacity=0;if(!dataOnly){$('badge-wan').className='section-badge complete';$('badge-wan').textContent='✓ Traced'}}
+document.querySelectorAll('.speed-btn').forEach(b=>{b.addEventListener('click',()=>{document.querySelectorAll('.speed-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');wanSpeedMult=parseFloat(b.dataset.speed);Sound.pop()})});
+
+/* ===== TRACEROUTE ===== */
+const TR_ROUTES={google:[{ip:'172.16.19.1',host:'school-router.local',ms:[1,3]},{ip:'202.158.3.1',host:'isp-router.spark.co.nz',ms:[5,12]},{ip:'72.14.236.126',host:'nz-isp.google.com',ms:[15,25]},{ip:'142.250.204.110',host:'syd09s37-in-f14.1e100.net',ms:[18,30]}],youtube:[{ip:'172.16.19.1',host:'school-router.local',ms:[1,3]},{ip:'202.158.3.1',host:'isp-router.spark.co.nz',ms:[5,12]},{ip:'72.14.236.200',host:'nz-isp.google.com',ms:[14,22]},{ip:'142.250.190.46',host:'syd14s50-in-f14.1e100.net',ms:[18,28]}],tiktok:[{ip:'172.16.19.1',host:'school-router.local',ms:[1,3]},{ip:'202.158.3.1',host:'isp-router.spark.co.nz',ms:[5,12]},{ip:'198.18.0.52',host:'edge-syd-1xx.tiktok.com',ms:[20,35]},{ip:'157.240.22.35',host:'star-mini-1000.xx.fbcdn.net',ms:[25,45]}],discord:[{ip:'172.16.19.1',host:'school-router.local',ms:[1,3]},{ip:'202.158.3.1',host:'isp-router.spark.co.nz',ms:[5,12]},{ip:'162.159.130.233',host:'sydney118.discord.gg',ms:[15,30]}],minecraft:[{ip:'172.16.19.1',host:'school-router.local',ms:[1,3]},{ip:'202.158.3.1',host:'isp-router.spark.co.nz',ms:[5,12]},{ip:'172.67.135.201',host:'mc.hypixel.net',ms:[18,35]}]};
+function startTraceroute(){const input=$('tr-input').value.trim().toLowerCase().replace(/[^a-z0-9.]/g,'');if(!input){showToast('Enter a destination!','error');return}$('tr-output').innerHTML='';$('badge-traceroute').className='section-badge pending';$('badge-traceroute').textContent='○ Tracing...';let hops=TR_ROUTES[input]||TR_ROUTES[input.replace(/\.(com|co\.nz|net|org|io)$/,'')];if(!hops){const base=Math.floor(Math.random()*3)+3;hops=[{ip:'172.16.19.1',host:'school-router.local',ms:[1,3]},{ip:'202.158.3.1',host:'isp-router.spark.co.nz',ms:[5,12]}];for(let i=2;i<base;i++){const octets=[Math.floor(Math.random()*200+20),Math.floor(Math.random()*255),Math.floor(Math.random()*255),Math.floor(Math.random()*250+1)];hops.push({ip:octets.join('.'),host:'hop-'+i+'.'+input,ms:[10+i*5,20+i*8]})}hops.push({ip:hops[hops.length-1].ip.replace(/\d+$/,Math.floor(Math.random()*50+1)),host:'dest.'+input,ms:[20+base*6,35+base*8]})}const out=$('tr-output');out.innerHTML=`<div class="text-xs dim font-bold mb-2">Tracing route to ${input} over max ${hops.length} hops:</div>`;hops.forEach((h,i)=>{setTimeout(()=>{const ms=h.ms[0]+Math.random()*(h.ms[1]-h.ms[0]);const row=document.createElement('div');row.className='hop-row flex items-center gap-3 p-2 rounded-lg chip';const pct=Math.min(100,ms/3);const col=ms<15?'#10b981':ms<30?'#f59e0b':'#ef4444';row.innerHTML=`<span class="w-6 text-center text-[10px] font-bold text-indigo-400">${i+1}</span><span class="mono text-[11px] w-32 truncate">${h.ip}</span><span class="text-[10px] dim truncate hidden md:inline w-40">${h.host}</span><div class="flex-1 h-1.5 bg-gray-700/50 rounded-full mx-1 overflow-hidden"><div class="h-full rounded-full" style="width:${pct}%;background:${col}"></div></div><span class="mono text-[10px] w-12 text-right" style="color:${col}">${ms.toFixed(0)}ms</span>`;out.appendChild(row);setTimeout(()=>row.classList.add('show'),50);Sound.hop();if(i===hops.length-1){$('badge-traceroute').className='section-badge complete';$('badge-traceroute').textContent='✓ Complete';showToast('📡 Traceroute complete!','success');revealWanSections()}},i*450)})}
+
+/* ===== TRAFFIC JAM ===== */
+function updateTrafficJam(){const n=parseInt($('traffic-slider').value);$('traffic-count').textContent=n;const bw=100/n;const lat=Math.round(5+n*n*1.2);$('traffic-per-device').textContent=bw>=1?bw.toFixed(1)+' Mbps each':'<1 Mbps each';$('traffic-latency-val').textContent=lat+' ms';$('traffic-latency-val').style.color=lat<30?'#10b981':lat<80?'#f59e0b':'#ef4444';const lp=Math.min(100,lat/5);$('traffic-latency-bar').style.width=lp+'%';$('traffic-latency-bar').style.background=lat<30?'#10b981':lat<80?'#f59e0b':'#ef4444';const colors=['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#06b6d4','#f97316','#14b8a6','#a855f7','#6366f1','#e11d48','#0ea5e9','#84cc16','#d946ef','#fb923c','#22d3ee','#f43f5e','#a78bfa','#34d399'];let bar='';for(let i=0;i<n;i++)bar+=`<div style="flex:1;background:${colors[i%colors.length]};opacity:.7" title="Device ${i+1}"></div>`;$('traffic-bw-bar').innerHTML=bar;let icons='';for(let i=0;i<n;i++)icons+=`<span class="traffic-device-icon text-lg" title="Device ${i+1}" style="animation-delay:${i*.05}s">${i%3===0?'💻':i%3===1?'📱':'🎮'}</span>`;$('traffic-devices-display').innerHTML=icons;const acts=[{name:'🌐 Web Browsing',need:2,latNeed:200},{name:'📺 HD Streaming',need:10,latNeed:100},{name:'🎮 Online Gaming',need:2,latNeed:50},{name:'🎬 4K Streaming',need:25,latNeed:30}];let html='';acts.forEach(a=>{const bwOk=bw>=a.need;const latOk=lat<=a.latNeed;const cls=bwOk&&latOk?'ok':bwOk||latOk?'slow':'dead';const icon=bwOk&&latOk?'✅':bwOk||latOk?'⚠️':'❌';html+=`<div class="activity-card ${cls}"><div class="flex items-center justify-between"><span class="text-xs font-bold">${a.name}</span><span>${icon}</span></div><div class="text-[10px] dim mt-1">Needs ${a.need} Mbps, <${a.latNeed}ms</div></div>`});$('traffic-activities').innerHTML=html;$('badge-traffic').className='section-badge complete';$('badge-traffic').textContent='✓ Tried'}
+updateTrafficJam();
+
+/* ===== LAN ===== */
+let lanActive=false,lanStatsTimer=null,lanClockStart=0,lanClockTimer=null,lanClients=[];
+function lanLayout(){return[{x:18,y:18,name:'You',ip:$('wan-ip').value||'172.16.19.40',you:true},{x:38,y:14,name:'Student 2',ip:'172.16.19.52'},{x:58,y:14,name:'Student 3',ip:'172.16.19.84'},{x:78,y:18,name:'Student 4',ip:'172.16.19.11'},{x:28,y:40,name:'Student 5',ip:'172.16.19.25'},{x:68,y:40,name:'Student 6',ip:'172.16.19.99'}]}
+function buildLanScene(){const c=$('lan-nodes'),svg=$('lan-svg');c.innerHTML='';svg.innerHTML='';lanClients=lanLayout().map(cl=>({...cl,hp:100,kills:0,score:0,alive:true})); const sv={x:50,y:78,label:'Home Server',icon:'🗄️',ip:'172.16.19.39'};const ec=getComputedStyle(document.documentElement).getPropertyValue('--border').trim()||'#1e293b';lanClients.forEach((cl,i)=>{const nd=document.createElement('div');nd.className='wan-node';nd.style.left=cl.x+'%';nd.style.top=cl.y+'%';nd.id='lan-client-'+i;nd.innerHTML=`<div class="emoji text-2xl mb-1">${cl.you?'😎':'💻'}</div><div class="tag" ${cl.you?'style="border-color:#6366f1"':''}><div class="text-[8px] font-black uppercase dim">${cl.name}</div><div class="text-[8px] mono text-indigo-400 font-bold">${cl.ip}</div></div>`;c.appendChild(nd);const l=document.createElementNS('http://www.w3.org/2000/svg','line');l.setAttribute('x1',cl.x+'%');l.setAttribute('y1',cl.y+'%');l.setAttribute('x2',sv.x+'%');l.setAttribute('y2',sv.y+'%');l.setAttribute('stroke',ec);l.setAttribute('stroke-width','2');svg.appendChild(l)});const sn=document.createElement('div');sn.className='wan-node';sn.style.left=sv.x+'%';sn.style.top=sv.y+'%';sn.id='lan-server';sn.innerHTML=`<div class="emoji text-4xl filter drop-shadow-lg mb-1 server-heart">${sv.icon}</div><div class="tag" style="border:2px solid #6366f1;padding:4px 12px"><div class="font-black text-[10px] text-indigo-400 uppercase tracking-widest">${sv.label}</div><div class="text-[10px] mono font-black text-indigo-400">${sv.ip}</div></div>`;c.appendChild(sn);renderLanScores();$('lan-feed').innerHTML=''}
+function initLan(){buildLanScene();$('lan-log').innerHTML='';netLog($('lan-log'),'LAN ready. Teacher server @ 172.16.19.39 listening...','sys')}
+function hpColor(h){return h>60?'#10b981':h>30?'#f59e0b':'#ef4444'}
+function renderLanScores(){const r=$('lan-score-rows');if(!r)return;r.innerHTML=lanClients.map((c,i)=>`<div class="score-row" style="opacity:${c.alive?1:.45}"><span class="text-[10px] font-black w-16 truncate" style="color:${c.you?'#818cf8':'var(--dim)'}">${c.name}</span><div class="hp-track"><div class="hp-fill" style="width:${c.hp}%;background:${hpColor(c.hp)}"></div></div><span class="text-[9px] mono dim w-8 text-right">${c.kills}K</span><span class="text-[9px] mono font-bold text-emerald-400 w-10 text-right">${c.score}</span></div>`).join('')}
+function feedKill(html){const w=$('lan-feed'),m=document.createElement('div');m.className='feed-msg';m.innerHTML=html;w.appendChild(m);while(w.children.length>3)w.firstChild.remove();setTimeout(()=>{m.classList.add('out');setTimeout(()=>m.remove(),550)},3400)}
+function toggleLan(){lanActive=!lanActive;const btn=$('lan-btn');if(lanActive){btn.innerText='⏹ Stop Traffic';btn.style.background='#ef4444';lanClockStart=Date.now();clearInterval(lanClockTimer);lanClockTimer=setInterval(()=>{const s=Math.floor((Date.now()-lanClockStart)/1000);$('lan-clock').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')},1000);netLog($('lan-log'),'Match started! All clients syncing through teacher server.','res');showToast('🎮 Match started!','success');Sound.fanfare();const labels=['SCORE: 100','POS: 55,20','CMD: MOVE','HP: 85','INPUT: UP','AMMO: 32'];const replies=['WORLD SYNC','STATE: READY','HP UPDATED','POS SYNC','MAP DATA: OK','SYNC COMPLETE'];lanClients.forEach((c,i)=>{const mk=(cls,fx,fy,tx,ty,txt,d)=>{const p=document.createElement('div');p.className='lan-packet '+cls;p.style.setProperty('--start-top',fy+'%');p.style.setProperty('--start-left',fx+'%');p.style.setProperty('--end-top',ty+'%');p.style.setProperty('--end-left',tx+'%');p.style.animationDelay=d+'s';p.textContent=txt;$('lan-nodes').appendChild(p)};mk('request',c.x,c.y,50,78,labels[i%labels.length],i*.4);mk('response',50,78,c.x,c.y,replies[i%replies.length],i*.4+1.2)});lanStatsTimer=setInterval(lanTick,850)}else{btn.innerText='Start Game Traffic';btn.style.background='#059669';clearInterval(lanStatsTimer);clearInterval(lanClockTimer);document.querySelectorAll('.lan-packet').forEach(p=>p.remove());netLog($('lan-log'),`Match ended after ${$('lan-clock').textContent}. Top scorer: ${topScorer().name} (${topScorer().score} pts)`,'warn');showToast('🏁 Match over!','info')}}
+function topScorer(){return lanClients.slice().sort((a,b)=>b.score-a.score)[0]}
+function lanTick(){const alive=lanClients.filter(c=>c.alive);if(alive.length>=2&&Math.random()<.8){const atk=alive[Math.floor(Math.random()*alive.length)];let tgt=alive[Math.floor(Math.random()*alive.length)];let g=0;while(tgt===atk&&g++<8)tgt=alive[Math.floor(Math.random()*alive.length)];if(tgt!==atk){const dmg=Math.round(12+Math.random()*18);tgt.hp-=dmg;atk.score+=10;netLog($('lan-log'),`${atk.name} hit ${tgt.name} (-${dmg} HP)`,'warn');if(tgt.hp<=0){tgt.hp=0;tgt.alive=false;atk.kills++;atk.score+=100;netLog($('lan-log'),`☠️ ${tgt.name} eliminated by ${atk.name}!`,'danger');feedKill(`💀 <span style="color:#93c5fd">${atk.name}</span> eliminated <span style="color:#fda4af">${tgt.name}</span>`);Sound.bad();glowLan(atk);setTimeout(()=>{tgt.hp=100;tgt.alive=true;netLog($('lan-log'),`${tgt.name} respawned.`,'res');renderLanScores()},2600)}}}else if(alive.length){const h=alive[Math.floor(Math.random()*alive.length)];if(h.hp<100){h.hp=Math.min(100,h.hp+Math.round(10+Math.random()*15));netLog($('lan-log'),`${h.name} picked up a medkit`,'res')}}lanClients.forEach(c=>{if(c.alive)c.score+=2});renderLanScores()}
+function glowLan(c){const i=lanClients.indexOf(c),n=$('lan-client-'+i);if(!n)return;n.classList.add('glow');setTimeout(()=>n.classList.remove('glow'),450)}
+
+/* ===== QUIZ ===== */
+const QUIZ=[
+ {q:'When you visit a website, your device is acting as a...',opts:['Server','Client','Router','Firewall'],a:1,why:'Your device requests information. Servers store it and send it back.'},
+ {q:'An IP address is best described as...',opts:['A secret password','A website name','A unique address for a device on a network','A type of cable'],a:2,why:'Every device needs a unique IP so replies know where to go.'},
+ {q:'A large file is sent across the internet as...',opts:['One giant burst of data','Thousands of small packets reassembled on arrival','A radio signal','An email attachment only'],a:1,why:'Data is split into packets which take different routes and are rebuilt at the destination.'},
+ {q:'What is the job of DNS?',opts:['Blocking viruses','Making Wi-Fi faster','Storing your photos','Translating website names into IP addresses'],a:3,why:'DNS is the internet\'s phone book: google.com → 142.250.204.110.'},
+ {q:'Which is most likely travelling over a LAN?',opts:['Watching Netflix USA','Video from phone to TV via Chromecast','Emailing a friend overseas','Searching Google'],a:1,why:'Chromecast stays inside your home network — never touches the wider internet.'},
+ {q:'After leaving your home router, where does your packet go next?',opts:['Straight to the destination server','To your printer','To your ISP (Internet Service Provider)','It disappears into the cloud'],a:2,why:'Your ISP\'s routers are the on-ramp to the global internet.'},
+ {q:'What type of cable connects New Zealand to the rest of the world?',opts:['Coaxial cable','Submarine fibre optic cable','Ethernet cable','Satellite only'],a:1,why:'Submarine fibre optic cables run across ocean floors — NZ\'s main ones include Southern Cross, Hawaiki and SX NEXT.'},
+ {q:'What does a router actually do with a packet?',opts:['Stores it forever','Reads the destination IP and forwards it closer','Encrypts it automatically','Converts it to radio waves'],a:1,why:'Routers read the destination IP address on each packet and forward it toward the right network.'}
+];
+let qi=0,qScore=0,qAnswered=false,qResults=[];
+let qTimerStart=0,qTimerInterval=null,qQuestionStart=0,qQuestionTimes=[];
+let quizOrder=[];
+function shuffleArray(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}return arr}
+function renderQuizStart(){clearInterval(qTimerInterval);$('quiz-progress').innerHTML='';$('quiz-body').innerHTML=`<div class="text-center py-6"><div class="text-6xl mb-4">🧠</div><h4 class="text-2xl font-black strong mb-2">Ready to test your knowledge?</h4><p class="dim text-sm mb-6">${QUIZ.length} questions · Randomised each time · Beat the clock!</p><button onclick="startQuiz()" class="cta-btn px-8 py-3 text-sm">🚀 Start Quiz</button></div>`}
+function startQuiz(){qi=0;qScore=0;qResults=[];qQuestionTimes=[];quizOrder=shuffleArray([...Array(QUIZ.length).keys()]);qTimerStart=Date.now();clearInterval(qTimerInterval);qTimerInterval=setInterval(updateQuizTimer,100);qQuestionStart=Date.now();renderQuiz()}
+function updateQuizTimer(){if(!$('quiz-timer'))return;const elapsed=((Date.now()-qTimerStart)/1000).toFixed(1);$('quiz-timer').textContent=elapsed+'s'}
+function renderQuiz(){qAnswered=false;qQuestionStart=Date.now();const body=$('quiz-body'),item=QUIZ[quizOrder[qi]];$('quiz-progress').innerHTML=QUIZ.map((_,i)=>`<span class="dot ${i===qi?'current':''} ${qResults[i]===true?'done-good':qResults[i]===false?'done-bad':''}"></span>`).join('');body.innerHTML=`<div class="flex items-center justify-between mb-3"><p class="text-[10px] font-black uppercase tracking-widest text-indigo-400">Question ${qi+1} of ${QUIZ.length}</p><span id="quiz-timer" class="mono text-[11px] font-bold text-amber-400">0s</span></div><h4 class="text-xl md:text-2xl font-black strong mb-5">${item.q}</h4><div class="grid md:grid-cols-2 gap-3 mb-4">${item.opts.map((o,i)=>`<button class="qopt" onclick="answerQuiz(${i})">${String.fromCharCode(65+i)}. ${o}</button>`).join('')}</div><div id="quiz-feedback" class="hidden rounded-2xl p-4 mb-4 text-sm font-bold"></div><button id="quiz-next" class="hidden cta-btn px-8 py-3 text-sm ml-auto block"></button>`;document.querySelectorAll('.qopt').forEach(b=>b.addEventListener('click',()=>Sound.pop()))}
+function answerQuiz(i){if(qAnswered)return;qAnswered=true;const elapsed=((Date.now()-qQuestionStart)/1000);qQuestionTimes.push(elapsed);const item=QUIZ[quizOrder[qi]],correct=i===item.a;qResults[qi]=correct;if(correct){qScore++;Sound.good()}else Sound.bad();document.querySelectorAll('.qopt').forEach((b,bi)=>{b.disabled=true;if(bi===item.a)b.classList.add('correct');else if(bi===i)b.classList.add('wrong')});const fb=$('quiz-feedback');fb.classList.remove('hidden');fb.style.background=correct?'rgba(16,185,129,.12)':'rgba(239,68,68,.1)';fb.style.border=`1.5px solid ${correct?'#10b981':'#ef4444'}`;const speed=elapsed<5?'⚡ Lightning fast!':elapsed<10?'👍 Quick!':'🐢 Take your time!';fb.innerHTML=`${correct?'✅ Correct!':'❌ Not quite.'} <span class="dim font-semibold">${item.why}</span> <span class="text-amber-400 ml-1">${speed} (${elapsed.toFixed(1)}s)</span>`;const next=$('quiz-next');next.classList.remove('hidden');next.textContent=qi===QUIZ.length-1?'See results →':'Next →';next.onclick=()=>qi===QUIZ.length-1?renderQuizResult():(qi++,renderQuiz());$('quiz-progress').innerHTML=QUIZ.map((_,di)=>`<span class="dot ${di<=qi?(qResults[di]===true?'done-good':qResults[di]===false?'done-bad':''):''} ${di===qi&&qi<QUIZ.length-1?'current':''}"></span>`).join('')}
+function renderQuizResult(){clearInterval(qTimerInterval);const totalTime=((Date.now()-qTimerStart)/1000);const avgTime=qQuestionTimes.length?(qQuestionTimes.reduce((a,b)=>a+b,0)/qQuestionTimes.length):0;const fastAnswers=qQuestionTimes.filter(t=>t<5).length;const pct=Math.round((qScore/QUIZ.length)*100);let grade,emoji;if(pct===100){grade='PERFECT! Certified Packet Master!';emoji='🏆'}else if(pct>=88){grade='Amazing — nearly flawless!';emoji='🎉'}else if(pct>=75){grade='Solid effort!';emoji='👍'}else if(pct>=50){grade='Good start — review and retry!';emoji='📚'}else{grade='Keep studying — you\'ll get there!';emoji='💪'}$('quiz-progress').innerHTML=QUIZ.map((_,i)=>`<span class="dot ${qResults[i]?'done-good':'done-bad'}"></span>`).join('');$('quiz-body').innerHTML=`<div class="text-center py-4"><div class="text-7xl mb-4">${emoji}</div><h4 class="text-3xl font-black strong mb-2">${qScore} / ${QUIZ.length}</h4><p class="dim font-bold mb-4">${grade}</p><div class="grid grid-cols-3 gap-3 max-w-md mx-auto mb-6"><div class="surface rounded-2xl p-3 text-center"><div class="text-xl font-black text-indigo-400">${pct}%</div><div class="text-[10px] dim font-bold uppercase">Accuracy</div></div><div class="surface rounded-2xl p-3 text-center"><div class="text-xl font-black text-amber-400">${totalTime.toFixed(1)}s</div><div class="text-[10px] dim font-bold uppercase">Total Time</div></div><div class="surface rounded-2xl p-3 text-center"><div class="text-xl font-black text-emerald-400">${fastAnswers}/${QUIZ.length}</div><div class="text-[10px] dim font-bold uppercase">Speed Bonus</div></div></div><p class="text-xs dim mb-4">Avg ${avgTime.toFixed(1)}s per question · ${fastAnswers} answered under 5s</p><button onclick="confettiBurst(document.getElementById('quiz-card'));Sound.fanfare()" class="chip px-5 py-2.5 rounded-xl font-black text-sm mr-2 hover:border-indigo-500 transition-all">🎊 Celebrate</button><button onclick="startQuiz()" class="cta-btn px-8 py-3 text-sm">🔄 Try again</button></div>`;if(pct>=75){confettiBurst($('quiz-card'));Sound.fanfare();showToast(`Quiz: ${qScore}/${QUIZ.length} in ${totalTime.toFixed(1)}s!`,'success')}}
+function confettiBurst(c){const cols=['#6366f1','#8b5cf6','#10b981','#f59e0b','#ec4899','#38bdf8'];for(let i=0;i<70;i++){const s=document.createElement('span');s.className='cf';s.style.left=Math.random()*100+'%';s.style.width=(6+Math.random()*6)+'px';s.style.height=(8+Math.random()*6)+'px';s.style.background=cols[Math.floor(Math.random()*cols.length)];s.style.animationDuration=(1.6+Math.random()*1.6)+'s';s.style.animationDelay=Math.random()*.5+'s';c.appendChild(s);setTimeout(()=>s.remove(),4200)}}
+
+/* ===== INTERNET MESH VISUALIZATION (LOCALISED) ===== */
+let meshNodes=[],meshEdges=[],meshPkts=0,meshAuto=true,meshFrame=0,meshCanvas,meshCtx,meshW,meshH,meshHover=null,meshAnimId=null,activePkts=[],meshTraceMode=false,meshTracePath=[];
+const MESH_ZONE_COLORS={
+ home:{bg:'rgba(56,189,248,0.04)',border:'rgba(56,189,248,0.18)'},
+ lan:{bg:'rgba(167,139,250,0.04)',border:'rgba(167,139,250,0.18)'},
+ isp:{bg:'rgba(245,158,11,0.04)',border:'rgba(245,158,11,0.18)'},
+ backbone:{bg:'rgba(99,102,241,0.04)',border:'rgba(99,102,241,0.18)'},
+ exchange:{bg:'rgba(236,72,153,0.04)',border:'rgba(236,72,153,0.18)'},
+ remote:{bg:'rgba(16,185,129,0.04)',border:'rgba(16,185,129,0.18)'}
+};
+const MESH_TYPES={
+ pc:{color:'#38bdf8',r:7,label:'PC / Laptop',zone:'home'},
+ phone:{color:'#38bdf8',r:6,label:'Smartphone',zone:'home'},
+ console:{color:'#38bdf8',r:6,label:'Games Console',zone:'home'},
+ homert:{color:'#a78bfa',r:9,label:'School Router',zone:'lan',desc:'NAT, DHCP, firewall — your gateway to the outside world'},
+ switch:{color:'#a78bfa',r:7,label:'Network Switch',zone:'lan'},
+  schoolrt:{color:'#a78bfa',r:9,label:'Home Gateway',zone:'lan',desc:'Aggregates all home traffic, forwards to ISP'},
+  isplocal:{color:'#f59e0b',r:8,label:'ISP Local Exchange',zone:'isp',desc:'First hop outside your home — your ISP\'s nearest point of presence'},
+ ispcore:{color:'#f59e0b',r:9,label:'ISP Core Router',zone:'isp',desc:'High-capacity backbone within your ISP\'s national network'},
+ ispgw:{color:'#f59e0b',r:8,label:'ISP International Gateway',zone:'isp',desc:'Where your ISP connects to undersea cables and international peers'},
+ bb:{color:'#6366f1',r:10,label:'Backbone Router',zone:'backbone',desc:'Tier-1 carrier — handles terabits/sec across continents'},
+ ixp:{color:'#ec4899',r:9,label:'Internet Exchange (IXP)',zone:'exchange',desc:'Where hundreds of ISPs and CDNs meet to exchange traffic'},
+ cdn:{color:'#ec4899',r:8,label:'CDN Edge Node',zone:'exchange',desc:'Cache server close to you — stores copies of popular content'},
+ dc:{color:'#10b981',r:10,label:'Data Centre',zone:'remote',desc:'Building full of servers — this is where websites and games actually live'},
+ db:{color:'#10b981',r:7,label:'Database Server',zone:'remote'},
+ web:{color:'#10b981',r:8,label:'Web Server',zone:'remote',desc:'Serves HTML, images and API responses for a website'},
+ game:{color:'#10b981',r:8,label:'Game Server',zone:'remote',desc:'Hosts multiplayer game state for thousands of players'},
+ dns:{color:'#f59e0b',r:8,label:'DNS Resolver',zone:'isp',desc:'Translates names like google.com into IP addresses'}
+};
+function meshInit(){
+ meshCanvas=document.getElementById('mesh-canvas');
+ if(!meshCanvas)return;
+ meshCtx=meshCanvas.getContext('2d');
+ meshResize();
+ if(meshNodes.length===0)meshBuildGraph();
+ meshSpawnInitialPkts();
+ if(!meshAnimId)meshLoop();
+ meshCanvas.addEventListener('mousemove',meshOnMouse);
+ meshCanvas.addEventListener('mouseleave',()=>document.getElementById('mesh-tooltip').classList.add('hidden'));
+ meshCanvas.addEventListener('click',meshOnClick);
+ meshUpdateHud();
+ $('badge-mesh').className='section-badge complete';
+ $('badge-mesh').textContent='✓ Loaded';
+}
+function meshOnMouse(e){
+ const r=meshCanvas.getBoundingClientRect();
+ const mx=(e.clientX-r.left)*(meshCanvas.width/r.width);
+ const my=(e.clientY-r.top)*(meshCanvas.height/r.height);
+ meshHover=null;
+ for(const n of meshNodes){
+  const dx=n.x-mx,dy=n.y-my;
+  if(dx*dx+dy*dy<(n.r+10)*(n.r+10)){meshHover=n;break}
+ }
+ const tip=document.getElementById('mesh-tooltip');
+ if(meshHover){
+  tip.classList.remove('hidden');
+  const n=meshHover,t=MESH_TYPES[n.type];
+  document.getElementById('mesh-tip-title').textContent=t.label;
+  let info=`Name: ${n.name}<br>IP: ${n.ip}`;
+  if(t.desc)info+=`<br><br>${t.desc}`;
+  const conns=meshEdges.filter(e=>e.a===n.id||e.b===n.id);
+  info+=`<br>Connections: ${conns.length}`;
+  if(n.load!==undefined)info+=` | Load: ${n.load}%`;
+  document.getElementById('mesh-tip-info').innerHTML=info;
+  tip.style.left=Math.min(e.clientX-r.left+18,r.width-280)+'px';
+  tip.style.top=Math.max(e.clientY-r.top-10,10)+'px';
+ }else{
+  tip.classList.add('hidden');
+ }
+}
+function meshOnClick(){
+ if(!meshHover)return;
+ meshPkts++;
+ meshFirePktFrom(meshHover);
+ meshUpdateHud();
+}
+function meshResize(){
+ const rect=meshCanvas.parentElement.getBoundingClientRect();
+ meshW=meshCanvas.width=Math.max(800,rect.width-48);
+ meshH=meshCanvas.height=Math.max(520,Math.min(640,rect.width*0.55));
+}
+function meshBuildGraph(){
+ meshNodes=[];meshEdges=[];
+ const W=meshW,H=meshH;
+ const zoneDefs=[
+   // HOME ZONE (left side)
+{x:0.06,y:0.72,type:'pc',name:'Your PC',ip:'172.16.19.40'},
+    {x:0.04,y:0.86,type:'phone',name:'Phone',ip:'172.16.19.42'},
+    {x:0.10,y:0.90,type:'console',name:'Xbox',ip:'172.16.19.55'},
+    {x:0.02,y:0.58,type:'pc',name:'Laptop',ip:'172.16.19.77'},
+    {x:0.07,y:0.42,type:'homert',name:'School Router',ip:'172.16.19.1'},
+   // ISP ZONE
+   {x:0.20,y:0.28,type:'isplocal',name:'ISP Local Exchange',ip:'202.158.3.1'},
+   {x:0.18,y:0.10,type:'dns',name:'DNS Resolver',ip:'8.8.8.8'},
+   {x:0.32,y:0.16,type:'ispcore',name:'ISP Core Router',ip:'203.97.1.10'},
+   {x:0.30,y:0.34,type:'ispcore',name:'ISP Core Backup',ip:'203.97.2.20'},
+   {x:0.40,y:0.08,type:'ispgw',name:'ISP Intl Gateway',ip:'203.97.4.1'},
+   // BACKBONE ZONE
+   {x:0.50,y:0.18,type:'bb',name:'Telia backbone',ip:'80.91.240.1'},
+   {x:0.56,y:0.36,type:'bb',name:'Lumen backbone',ip:'4.68.1.1'},
+   {x:0.62,y:0.10,type:'bb',name:'NTT backbone',ip:'210.173.176.1'},
+   {x:0.48,y:0.48,type:'bb',name:'Telstra backbone',ip:'210.50.128.1'},
+   // EXCHANGE / CDN ZONE
+   {x:0.70,y:0.24,type:'ixp',name:'Equinix IX Sydney',ip:'IXP-SYD'},
+   {x:0.74,y:0.40,type:'cdn',name:'Cloudflare Edge',ip:'1.1.1.1'},
+   {x:0.66,y:0.48,type:'cdn',name:'Akamai Edge',ip:'23.12.0.1'},
+   {x:0.78,y:0.12,type:'ixp',name:'DE-CIX Frankfurt',ip:'IXP-FRA'},
+   // REMOTE / SERVICE ZONE (right side) - what students actually use!
+   {x:0.88,y:0.10,type:'dc',name:'YouTube Servers',ip:'142.250.190.46'},
+   {x:0.92,y:0.22,type:'web',name:'TikTok Servers',ip:'157.240.22.35'},
+   {x:0.86,y:0.34,type:'dc',name:'Netflix Servers',ip:'52.3.144.148'},
+   {x:0.92,y:0.46,type:'web',name:'Instagram Servers',ip:'157.240.22.174'},
+   {x:0.86,y:0.58,type:'game',name:'Roblox Servers',ip:'128.116.114.3'},
+   {x:0.94,y:0.70,type:'game',name:'Minecraft Server',ip:'172.67.135.201'},
+   {x:0.86,y:0.78,type:'web',name:'Snapchat Servers',ip:'199.231.210.10'},
+   {x:0.94,y:0.84,type:'dc',name:'Discord Servers',ip:'162.159.130.233'},
+   // ADDITIONAL ISPs & cross-connects for mesh density
+   {x:0.14,y:0.14,type:'isplocal',name:'2degrees PoP',ip:'210.86.192.1'},
+   {x:0.36,y:0.38,type:'ispcore',name:'Spark Core',ip:'202.158.224.1'},
+   {x:0.44,y:0.56,type:'bb',name:'AWS Direct Connect',ip:'169.254.1.1'},
+   {x:0.58,y:0.60,type:'cdn',name:'Fastly Edge',ip:'151.101.1.1'},
+   {x:0.76,y:0.58,type:'dc',name:'AWS Sydney',ip:'13.236.0.1'},
+  ];
+ zoneDefs.forEach(z=>{
+  const t=MESH_TYPES[z.type];
+  meshNodes.push({
+   id:meshNodes.length,
+   x:z.x*W, y:z.y*H,
+   r:t.r, type:z.type, name:z.name, ip:z.ip,
+   load:Math.floor(Math.random()*50+5),
+   zone:t.zone,
+   origX:z.x*W, origY:z.y*H
+  });
+ });
+  // Connect devices to home router
+  meshAddEdge(0,4); meshAddEdge(1,4); meshAddEdge(2,4); meshAddEdge(3,4);
+  // Home router → ISP local & 2degrees
+  meshAddEdge(4,5); meshAddEdge(4,26);
+  // ISP local → DNS
+  meshAddEdge(5,6);
+  // ISP local → ISP core
+  meshAddEdge(5,7); meshAddEdge(5,8);
+  meshAddEdge(26,7);
+  // ISP core → international gateway
+  meshAddEdge(7,9); meshAddEdge(8,9);
+  // ISP → backbone
+  meshAddEdge(9,10); meshAddEdge(9,11); meshAddEdge(9,12);
+  meshAddEdge(7,13); meshAddEdge(8,13);
+  // Backbone cross-links
+  meshAddEdge(10,11); meshAddEdge(10,12); meshAddEdge(11,13); meshAddEdge(11,28);
+  // Backbone → IXP / CDN
+  meshAddEdge(10,14); meshAddEdge(11,14); meshAddEdge(11,15);
+  meshAddEdge(12,14); meshAddEdge(12,17);
+  meshAddEdge(13,17); meshAddEdge(13,15);
+  meshAddEdge(28,16); meshAddEdge(28,17);
+  // IXP ↔ CDN
+  meshAddEdge(14,15); meshAddEdge(14,16); meshAddEdge(15,16);
+  // IXP / CDN → remote services
+  meshAddEdge(14,18); meshAddEdge(15,19); meshAddEdge(15,20);
+  meshAddEdge(16,20); meshAddEdge(16,21);
+  meshAddEdge(17,21); meshAddEdge(17,22);
+  meshAddEdge(14,23); meshAddEdge(15,24);
+  meshAddEdge(16,25); meshAddEdge(17,25);
+  meshAddEdge(29,18); meshAddEdge(29,19);
+  // Extra density connections
+  meshAddEdge(27,7); meshAddEdge(27,8); meshAddEdge(27,10);
+  meshAddEdge(18,19); meshAddEdge(20,21); meshAddEdge(22,23); meshAddEdge(23,24); meshAddEdge(24,25);
+  meshAddEdge(19,20); meshAddEdge(21,22);
+}
+function meshAddEdge(a,b){
+ if(meshEdges.some(e=>(e.a===a&&e.b===b)||(e.a===b&&e.b===a)))return;
+ meshEdges.push({a,b,load:Math.random()*0.5+0.3});
+}
+function meshSpawnInitialPkts(){for(let i=0;i<4;i++)meshFirePktHomeToService()}
+function meshBFS(fromId,toId){
+ const visited=new Set([fromId]),queue=[[fromId]];
+ while(queue.length){
+  const path=queue.shift(),cur=path[path.length-1];
+  if(cur===toId)return path;
+  for(const e of meshEdges){
+   let nb=-1;
+   if(e.a===cur)nb=e.b;else if(e.b===cur)nb=e.a;
+   if(nb>=0&&!visited.has(nb)){visited.add(nb);queue.push([...path,nb])}
+  }
+ }
+ return null;
+}
+function meshHomeIds(){return meshNodes.filter(n=>n.zone==='home').map(n=>n.id)}
+function meshServiceIds(){return meshNodes.filter(n=>n.zone==='remote').map(n=>n.id)}
+function meshFirePktHomeToService(){
+ const homes=meshHomeIds(),svcs=meshServiceIds();
+ if(!homes.length||!svcs.length)return;
+ const src=homes[Math.floor(Math.random()*homes.length)];
+ const dst=svcs[Math.floor(Math.random()*svcs.length)];
+ const path=meshBFS(src,dst);
+ if(!path||path.length<2)return;
+ const zoneColors={home:'#38bdf8',lan:'#a78bfa',isp:'#f59e0b',backbone:'#6366f1',exchange:'#ec4899',remote:'#10b981'};
+ for(let i=0;i<path.length-1;i++){
+  const delay=i*280;
+  const fromNode=meshNodes[path[i]],toNode=meshNodes[path[i+1]];
+  const pktColor=zoneColors[fromNode.zone]||zoneColors[toNode.zone]||'#6366f1';
+  setTimeout(()=>{
+   activePkts.push({fx:fromNode.x,fy:fromNode.y,tx:toNode.x,ty:toNode.y,progress:0,speed:0.014+Math.random()*0.004,color:pktColor,size:2.5+Math.random()*1,fromId:path[i],toId:path[i+1],trail:[],trace:false});
+   meshPkts++;meshUpdateHud();
+  },delay);
+ }
+ // Response back along the same path after a delay
+ if(Math.random()<0.6){
+  const respDelay=path.length*280+400+Math.random()*600;
+  for(let i=path.length-1;i>0;i--){
+   const delay2=respDelay+(path.length-1-i)*280;
+   const fromNode=meshNodes[path[i]],toNode=meshNodes[path[i-1]];
+   const pktColor=zoneColors[fromNode.zone]||zoneColors[toNode.zone]||'#6366f1';
+   setTimeout(()=>{
+    activePkts.push({fx:fromNode.x,fy:fromNode.y,tx:toNode.x,ty:toNode.y,progress:0,speed:0.014+Math.random()*0.004,color:pktColor,size:2+Math.random()*0.8,fromId:path[i],toId:path[i-1],trail:[],trace:false});
+    meshPkts++;meshUpdateHud();
+   },delay2);
+  }
+ }
+}
+function meshFirePktFrom(n){
+ const conns=[];
+ for(const e of meshEdges){
+  if(e.a===n.id)conns.push(e.b);
+  if(e.b===n.id)conns.push(e.a);
+ }
+ if(conns.length===0)return;
+ const target=conns[Math.floor(Math.random()*conns.length)];
+ meshFirePkt(n.id,target,false);
+ meshPkts++;meshUpdateHud();
+}
+function meshFirePkt(fromId,toId,trace){
+ const from=meshNodes[fromId],to=meshNodes[toId];
+ if(!from||!to)return;
+ const zoneColors={home:'#38bdf8',lan:'#a78bfa',isp:'#f59e0b',backbone:'#6366f1',exchange:'#ec4899',remote:'#10b981'};
+ const c=zoneColors[from.zone]||zoneColors[to.zone]||'#6366f1';
+ activePkts.push({
+  fx:from.x,fy:from.y,tx:to.x,ty:to.y,
+  progress:0,speed:0.006+Math.random()*0.008,
+  color:c,size:2.5+Math.random()*1.5,
+  fromId,toId,trail:[],trace:!!trace
+ });
+}
+function meshTraceRoute(){
+ const homes=meshHomeIds(),svcs=meshServiceIds();
+ if(!homes.length||!svcs.length)return;
+ const src=homes[0],dst=svcs[Math.floor(Math.random()*svcs.length)];
+ const path=meshBFS(src,dst);
+ if(!path||path.length<2)return;
+ meshTracePath=path;
+ meshTraceMode=true;
+ $('mesh-hop-bar').classList.remove('hidden');
+ $('mesh-path-btn').textContent='⚡ Tracing…';
+ $('mesh-path-btn').style.color='#f59e0b';
+ meshTraceStep(0);
+}
+function meshTraceStep(idx){
+ if(idx>=meshTracePath.length-1||!meshTraceMode){
+  meshTraceMode=false;
+  $('mesh-path-btn').textContent='⚡ Trace';
+  $('mesh-path-btn').style.color='';
+  setTimeout(()=>{$('mesh-hop-bar').classList.add('hidden')},3000);
+  return;
+ }
+ const a=meshTracePath[idx],b=meshTracePath[idx+1];
+ meshFirePkt(a,b,true);
+ meshPkts++;
+ const hopBar=$('mesh-hop-dots');
+ hopBar.innerHTML='';
+ for(let i=0;i<meshTracePath.length;i++){
+  const nd=meshNodes[meshTracePath[i]];
+  const t=MESH_TYPES[nd.type];
+  const done=i<idx+1;
+  const current=i===idx+1;
+  const dot=document.createElement('span');
+  dot.className='inline-block w-2 h-2 rounded-full transition-all';
+  dot.style.background=done?'#10b981':current?t.color:'#334155';
+  if(current)dot.style.boxShadow=`0 0 8px ${t.color}`;
+  hopBar.appendChild(dot);
+  if(i<meshTracePath.length-1){
+   const arrow=document.createElement('span');
+   arrow.textContent='→';
+   arrow.className='text-[8px] dim';
+   hopBar.appendChild(arrow);
+  }
+ }
+ $('mesh-hop').textContent=`${idx+1}/${meshTracePath.length-1}`;
+ const from=meshNodes[meshTracePath[idx]],to=meshNodes[meshTracePath[idx+1]];
+ const dist=Math.sqrt((to.x-from.x)**2+(to.y-from.y)**2);
+ const lat=Math.round(dist*0.04+Math.random()*8+2);
+ $('mesh-latency').textContent=lat+'ms';
+ $('mesh-latency').style.color=lat<15?'#10b981':lat<40?'#f59e0b':'#ef4444';
+ setTimeout(()=>meshTraceStep(idx+1),900);
+}
+function meshAddBurst(){for(let i=0;i<6;i++)setTimeout(()=>meshFirePktHomeToService(),i*350)}
+function meshToggleAuto(){meshAuto=!meshAuto;$('mesh-auto-btn').textContent=meshAuto?'⏸ Auto':'▶ Auto'}
+function meshTogglePath(){meshTraceMode=false;meshTraceRoute()}
+function meshReset(){
+  meshNodes=[];meshEdges=[];activePkts=[];meshPkts=0;meshFrame=0;meshTraceMode=false;
+  meshBuildGraph();for(let i=0;i<4;i++)setTimeout(()=>meshFirePktHomeToService(),i*300);meshUpdateHud();
+ $('mesh-hop-bar').classList.add('hidden');
+ $('mesh-hop').textContent='—';$('mesh-latency').textContent='—';
+}
+function meshUpdateHud(){
+ $('mesh-pkts').textContent=meshPkts;
+}
+function meshLoop(){
+ if(!meshCanvas||!meshCtx){meshAnimId=null;return}
+ meshFrame++;
+ if(meshAuto&&meshFrame%80===0){meshFirePktHomeToService()}
+ meshDraw();
+ meshAnimId=requestAnimationFrame(meshLoop);
+}
+function meshDraw(){
+ const ctx=meshCtx,W=meshW,H=meshH;
+ ctx.clearRect(0,0,W,H);
+ const isDark=document.documentElement.dataset.theme==='dark';
+ ctx.fillStyle=isDark?'#020617':'#eef2f7';
+ ctx.fillRect(0,0,W,H);
+ // Draw zone backgrounds
+ const zones=[
+   {label:'🏠 Home Network',x:0,y:0.40,w:0.16,h:0.60,color:MESH_ZONE_COLORS.home},
+   {label:'🌐 ISP Network',x:0.17,y:0,w:0.28,h:0.48,color:MESH_ZONE_COLORS.isp},
+   {label:' backbone',x:0.46,y:0,w:0.20,h:0.66,color:MESH_ZONE_COLORS.backbone},
+   {label:'🔗 Exchange / CDN',x:0.64,y:0,w:0.16,h:0.70,color:MESH_ZONE_COLORS.exchange},
+   {label:'📱 Your Services',x:0.82,y:0,w:0.18,h:1.0,color:MESH_ZONE_COLORS.remote}
+ ];
+ for(const z of zones){
+  ctx.fillStyle=z.color.bg;
+  ctx.strokeStyle=z.color.border;
+  ctx.lineWidth=1;
+  const rx=z.x*W,ry=z.y*H,rw=z.w*W,rh=z.h*H;
+   ctx.beginPath();
+   const rr=12;
+   ctx.moveTo(rx+rr,ry);
+   ctx.lineTo(rx+rw-rr,ry);ctx.arcTo(rx+rw,ry,rx+rw,ry+rr,rr);
+   ctx.lineTo(rx+rw,ry+rh-rr);ctx.arcTo(rx+rw,ry+rh,rx+rw-rr,ry+rh,rr);
+   ctx.lineTo(rx+rr,ry+rh);ctx.arcTo(rx,ry+rh,rx,ry+rh-rr,rr);
+   ctx.lineTo(rx,ry+rr);ctx.arcTo(rx,ry,rx+rr,ry,rr);
+   ctx.closePath();
+  ctx.fill();
+  ctx.setLineDash([4,4]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  if(z.label.trim()){
+   ctx.fillStyle=isDark?'rgba(148,163,184,0.25)':'rgba(100,116,139,0.25)';
+   ctx.font='bold 10px Inter, sans-serif';
+   ctx.textAlign='left';
+   ctx.fillText(z.label.trim(),rx+8,ry+16);
+  }
+ }
+ const t=meshFrame*0.005;
+ // Draw edges
+ for(const e of meshEdges){
+  const a=meshNodes[e.a],b=meshNodes[e.b];
+  const pulse=Math.sin(t+e.load*10)*0.3+0.7;
+  ctx.beginPath();
+  ctx.moveTo(a.x,a.y);
+  ctx.lineTo(b.x,b.y);
+  ctx.strokeStyle=isDark?`rgba(148,163,184,${0.15+pulse*0.15})`:`rgba(100,116,139,${0.2+pulse*0.15})`;
+   ctx.lineWidth=1.5;
+  ctx.stroke();
+  // Data crawling along edges
+  const dp=(meshFrame*0.002+e.load*3)%1;
+  const px=a.x+(b.x-a.x)*dp;
+  const py=a.y+(b.y-a.y)*dp;
+  ctx.beginPath();
+  ctx.arc(px,py,1.2,0,Math.PI*2);
+  ctx.fillStyle=`rgba(129,140,248,${0.35+Math.sin(t*2+e.load*5)*0.15})`;
+  ctx.fill();
+ }
+ // Draw packets with trails
+ for(const pkt of activePkts){
+  pkt.progress+=pkt.speed;
+  const x=pkt.fx+(pkt.tx-pkt.fx)*pkt.progress;
+  const y=pkt.fy+(pkt.ty-pkt.fy)*pkt.progress;
+  pkt.trail.push({x,y,a:1});
+  if(pkt.trail.length>20)pkt.trail.shift();
+  const hex=pkt.color;
+  const pr=parseInt(hex.slice(1,3),16),pg=parseInt(hex.slice(3,5),16),pb=parseInt(hex.slice(5,7),16);
+  // Trail
+  for(let i=0;i<pkt.trail.length;i++){
+   const tr=pkt.trail[i];
+   tr.a*=0.86;
+   ctx.beginPath();
+   ctx.arc(tr.x,tr.y,pkt.size*tr.a*0.5,0,Math.PI*2);
+   ctx.fillStyle=`rgba(${pr},${pg},${pb},${tr.a*0.3})`;
+   ctx.fill();
+  }
+  // Head
+  ctx.beginPath();
+  ctx.arc(x,y,pkt.size,0,Math.PI*2);
+  ctx.fillStyle=pkt.color;
+  ctx.shadowColor=pkt.color;
+  ctx.shadowBlur=pkt.trace?18:12;
+  ctx.fill();
+  ctx.shadowBlur=0;
+  // Trace mode ring
+  if(pkt.trace){
+   ctx.beginPath();
+   ctx.arc(x,y,pkt.size+4,0,Math.PI*2);
+   ctx.strokeStyle=`rgba(${pr},${pg},${pb},0.4)`;
+   ctx.lineWidth=1.5;
+   ctx.stroke();
+  }
+ }
+ activePkts=activePkts.filter(p=>p.progress<1.05);
+ // Draw nodes
+ const hoveredId=meshHover?meshHover.id:-1;
+ for(const n of meshNodes){
+  const t2=MESH_TYPES[n.type];
+  const isHovered=n.id===hoveredId;
+  const pR=isHovered?n.r+3:n.r+Math.sin(t*2+n.id*0.7)*0.6;
+  const hex=t2.color;
+  const nr=parseInt(hex.slice(1,3),16),ng=parseInt(hex.slice(3,5),16),nb=parseInt(hex.slice(5,7),16);
+  // Glow
+  ctx.beginPath();
+  ctx.arc(n.x,n.y,pR+5,0,Math.PI*2);
+  ctx.fillStyle=`rgba(${nr},${ng},${nb},${isHovered?0.2:0.06})`;
+  ctx.fill();
+  // Body
+  ctx.beginPath();
+  ctx.arc(n.x,n.y,pR,0,Math.PI*2);
+  const grad=ctx.createRadialGradient(n.x,n.y,0,n.x,n.y,pR);
+  grad.addColorStop(0,hex);
+  grad.addColorStop(1,`rgba(${nr},${ng},${nb},0.45)`);
+  ctx.fillStyle=grad;
+  ctx.fill();
+  // Hover ring
+  if(isHovered){
+   ctx.strokeStyle=hex;
+   ctx.lineWidth=2;
+   ctx.stroke();
+  }
+  // Name labels for larger/more important nodes
+  if(n.r>=8||isHovered){
+   ctx.fillStyle=isDark?`rgba(${nr},${ng},${nb},0.7)`:`rgba(${nr},${ng},${nb},0.6)`;
+   ctx.font=`${isHovered?'bold ':''} ${isHovered?'11':'9'}px 'JetBrains Mono',monospace`;
+   ctx.textAlign='center';
+   ctx.fillText(n.name,n.x,n.y+pR+13);
+   if(isHovered){
+    ctx.fillStyle=isDark?'rgba(148,163,184,0.5)':'rgba(100,116,139,0.5)';
+    ctx.font='8px Inter, sans-serif';
+    ctx.fillText(n.ip,n.x,n.y+pR+24);
+   }
+  }
+ }
+ // Subtle grid dots
+ ctx.fillStyle=isDark?'rgba(100,116,139,0.03)':'rgba(100,116,139,0.04)';
+ for(let gx=30;gx<W;gx+=60)for(let gy=30;gy<H;gy+=60){ctx.beginPath();ctx.arc(gx,gy,0.8,0,Math.PI*2);ctx.fill()}
+}
+function initMesh(){meshInit()}
+
+/* ===== WIRING ===== */
+$('theme-toggle').addEventListener('click',toggleTheme);
+$('sound-toggle').addEventListener('click',function(){Sound.enabled=!Sound.enabled;this.textContent=Sound.enabled?'🔊':'🔇';if(Sound.enabled){Sound.ensure();Sound.good();showToast('Sound ON','info')}});
+['wan-ip','wan-gateway'].forEach(id=>$(id).addEventListener('change',()=>{if($('content-lan').classList.contains('active'))buildLanScene();else if($('content-wan').classList.contains('active'))updateWanIpDisplays()}));
+try{applyTheme(localStorage.getItem('ne-theme')||'dark')}catch(e){applyTheme('dark')}
+renderQuizStart();runStats();updateTrafficJam();initMesh();
+window.addEventListener('resize',()=>{if(meshCanvas&&wanRevealed){meshResize();meshBuildGraph();meshSpawnInitialPkts()}});
+</script>
+</body>
+</html>
