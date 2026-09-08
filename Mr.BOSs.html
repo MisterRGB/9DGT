@@ -1106,6 +1106,9 @@ function renderStartList(body,q){body.innerHTML='';q=(q||'').toLowerCase();
 function openPanel(sel,fn){closePanels();fn&&fn();$(sel).classList.add('open')}
 function closePanels(){$$('.panel').forEach(p=>p.classList.remove('open'))}
 function togglePanel(sel,fn){const p=$(sel);const was=p.classList.contains('open');closePanels();if(!was){fn&&fn();p.classList.add('open')}}
+$('#taskbar').addEventListener('contextmenu',e=>{e.preventDefault();if(e.target.closest('.tb-b,#tb-center,#tb-tray,.ctx'))return;
+ ctxMenu(e.clientX-180,e.clientY-160,[{l:'Task Manager',ic:AI.taskmgr,f:()=>openApp('taskmgr')},'-',
+  {l:'Taskbar settings',ic:AI.settings,f:()=>openApp('settings')}]);});
 document.addEventListener('pointerdown',e=>{if(e.target.closest('.panel,#tb-center,#tb-tray,.ctx'))return;closePanels();});
 const QS={wifi:true,bt:false,air:false,night:false};
 function applyScreen(){$('#screen').style.filter=`brightness(${state.settings.bright})${QS.night?' sepia(.3)':''}`;
@@ -2611,40 +2614,133 @@ applyFn=(close)=>{guard(()=>{
 APPS.props.onArg=function(W,arg){W.body.innerHTML='';APPS.props.init(W,arg||{})};
 
 /* ============ APP: Task Manager ============ */
-APPS.taskmgr={name:'Task Manager',icon:AI.taskmgr,w:840,h:560,single:true,
+APPS.taskmgr={name:'Task Manager',icon:AI.taskmgr,w:920,h:620,single:true,
  init(W){let tab='proc';
-  const tabs=el('div',{class:'clk-tabs'});
-  const body=el('div',{style:'flex:1;min-height:0;overflow:auto;padding:6px 12px'});
-  function draw(){tabs.innerHTML='';
-   [['proc','Processes'],['svc','Services']].forEach(e=>
-    tabs.append(el('button',{class:'clk-tab'+(tab===e[0]?' on':''),text:e[1],onclick:()=>{tab=e[0];draw()}})));
-   body.innerHTML='';
-   if(tab==='proc'){
-    const t=el('table',{class:'tbl'});
-    t.append(el('tr',{},el('th',{text:'Process'}),el('th',{text:'Status'}),el('th',{text:'CPU'}),el('th',{text:'Memory'}),el('th',{text:''})));
-    const rows=[];
-    [...WINS].forEach(w2=>{const app=APPS[w2.app];
-     w2.cpu=(w2.cpu||0)*.6+Math.random()*(w2===focusedW?7:2.5);
-     rows.push({name:app.name,icon:app.icon,status:w2.min?'Suspended':'Running',
-      cpu:w2.cpu.toFixed(1)+'%',mem:Math.round(w2.e.offsetWidth*w2.e.offsetHeight/9000+30)+' MB',
-      end:()=>closeWin(w2)});});
-    [['Mr.B Explorer (shell)','Running',0.4],['System','Running',1.2],
-     ['Service Host: Mr.B Audio',svcOn('audio')?'Running':'Stopped',0.3],
-     ['Service Host: Mr.B Search',svcOn('search')?'Running':'Stopped',0.2],
-     ['Service Host: Mr.B Time',svcOn('time')?'Running':'Stopped',0.1]]
-     .forEach(e=>rows.push({name:e[0],icon:winLogo,status:e[1],cpu:e[2].toFixed(1)+'%',mem:(12+hashS(e[0])%80)+' MB',end:null}));
-    rows.forEach(r=>{const tr2=el('tr');
-     tr2.append(el('td',{html:'<span style="display:inline-flex;align-items:center;gap:8px"><span class="ico" style="width:16px;height:16px">'+r.icon+'</span>'+esc(r.name)+'</span>'}),
-      el('td',{style:'color:'+(r.status==='Running'?'#107c10':'var(--txt2)'),text:r.status}),
-      el('td',{text:r.cpu}),el('td',{text:r.mem}),
-      el('td',{},r.end?el('button',{class:'btn',style:'font-size:12px;padding:3px 12px',text:'End task',onclick:r.end}):el('span',{style:'color:var(--txt2);font-size:11px',text:'—'})));
-     t.append(tr2);});
-    body.append(t);
-   }else{
-    body.append(el('div',{style:'font-size:12.5px;color:var(--txt2);margin:6px 0',text:'Start/stop services — requires elevation for standard users.'}));
-    body.append(servicesTable(draw));}}
-  W.body.append(tabs,body);
-  W.every(1500,draw);draw();}};
+  const side=el('div',{style:'width:190px;border-right:1px solid var(--stroke);background:var(--wbg2);flex:none;display:flex;flex-direction:column;padding:10px 6px;overflow-y:auto'});
+  const body=el('div',{style:'flex:1;min-height:0;overflow:auto;padding:8px 14px'});
+  const mkSide=(id,ic,label)=>el('button',{class:'ex-si'+(tab===id?' on':''),
+   html:'<span class="ico">'+ic+'</span><span>'+label+'</span>',onclick:()=>{tab=id;draw()}});
+  const sideBtns={};
+  function drawSide(){side.innerHTML='';
+   side.append(el('div',{style:'font-size:13px;font-weight:600;padding:6px 10px 10px',text:'Task Manager'}));
+   const items=[['proc',IC.monitor,'Processes'],['perf',AI.hardware,'Performance'],['svc',AI.settings,'Services']];
+   items.forEach(([id,ic,l])=>{const b=mkSide(id,ic,l);sideBtns[id]=b;side.append(b)});
+   for(const k in sideBtns)sideBtns[k].classList.toggle('on',tab===k);}
+  function getProcesses(){
+   const procs=[];
+   [...WINS].forEach(w2=>{const app=APPS[w2.app];
+    w2.cpu=(w2.cpu||0)*.55+Math.random()*(w2===focusedW?8:3);
+    const memBase=Math.round(w2.e.offsetWidth*w2.e.offsetHeight/7000+28);
+    const mem=Math.round(memBase+Math.random()*12);
+    const disk=(Math.random()*1.2).toFixed(1);
+    const net=(Math.random()*.8).toFixed(1);
+    procs.push({name:app.name,icon:app.icon,status:w2.min?'Suspended':'Running',
+     cpu:w2.cpu,cpuS:w2.cpu.toFixed(1)+'%',mem:mem,memS:mem+' MB',
+     disk:disk+' MB/s',net:net+' Mbps',
+     win:w2,end:()=>closeWin(w2),isApp:true});});
+   [['Mr.B Explorer (shell)',0.4,24],['System',1.2,18],['DWM (Desktop Window Manager)',2.1,42],
+    ['Service Host: Mr.B Audio',svcOn('audio')?0.3:0,svcOn('audio')?14:12],
+    ['Service Host: Mr.B Search',svcOn('search')?0.2:0,svcOn('search')?11:10],
+    ['Service Host: Mr.B Time',svcOn('time')?0.1:0,svcOn('time')?8:8],
+    ['Antimalware Service Executable',1.8,68],['Windows Explorer',0.5,36],
+    ['Runtime Broker',0.3,12],['COM Surrogate',0.2,10],
+    ['Windows Audio Device Graph',svcOn('audio')?0.6:0,svcOn('audio')?22:16]]
+    .forEach(e=>procs.push({name:e[0],icon:winLogo,status:svcOn('audio')||e[2]>14?'Running':'Stopped',
+     cpu:e[1]+Math.random()*.4,cpuS:e[1].toFixed(1)+'%',mem:e[2]+Math.round(Math.random()*6),memS:(e[2]+Math.round(Math.random()*6))+' MB',
+     disk:(Math.random()*.5).toFixed(1)+' MB/s',net:'0.0 Mbps',win:null,end:null,isApp:false}));
+   return procs;}
+  function draw(){drawSide();body.innerHTML='';
+   if(tab==='proc')drawProcesses();else if(tab==='perf')drawPerf();else drawServices();}
+  function drawProcesses(){
+   const procs=getProcesses();
+   const totalCPU=procs.reduce((s,p)=>s+p.cpu,0);
+   const totalMem=procs.reduce((s,p)=>s+p.mem,0);
+   const summary=el('div',{style:'display:flex;gap:16px;padding:8px 4px 14px;border-bottom:1px solid var(--stroke);margin-bottom:6px;flex-wrap:wrap'});
+   const chip=(lbl,val,col)=>el('div',{style:'display:flex;align-items:center;gap:8px;font-size:12px'},
+    el('span',{style:'color:var(--txt2)',text:lbl}),
+    el('span',{style:'font-weight:600;color:'+(col||'var(--txt)'),text:val}));
+   const cpuPct=Math.min(100,totalCPU).toFixed(0);
+   const memPct=Math.min(100,totalMem/16384*100).toFixed(0);
+   summary.append(chip('CPU',cpuPct+'%',+cpuPct>80?'#c42b1c':'var(--txt)'),chip('Memory',memPct+'% ('+totalMem+' MB / 16,384 MB)',+memPct>80?'#c42b1c':'var(--txt)'),
+    chip('Disk',procs.length+' processes'),chip('Network','Active'));
+   body.append(summary);
+   const t=el('table',{class:'tbl'});
+   t.append(el('tr',{},el('th',{text:'Process',style:'min-width:200px'}),el('th',{text:'Status',style:'min-width:80px'}),
+    el('th',{text:'CPU',style:'min-width:70px;text-align:right'}),el('th',{text:'Memory',style:'min-width:100px;text-align:right'}),
+    el('th',{text:'Disk',style:'min-width:80px;text-align:right'}),el('th',{text:'Network',style:'min-width:80px;text-align:right'}),
+    el('th',{text:'',style:'min-width:90px'})));
+   procs.sort((a,b)=>b.cpu-a.cpu);
+   procs.forEach(r=>{
+    const cpuColor=r.cpu>40?'#c42b1c':r.cpu>15?'#ca5010':'var(--txt2)';
+    const tr2=el('tr',{class:'row'});
+    const endBtn=r.end?el('button',{class:'btn',style:'font-size:11px;padding:2px 10px;white-space:nowrap',
+     text:'End task',onclick:()=>r.end()}):null;
+    if(endBtn){endBtn.addEventListener('click',e=>e.stopPropagation())}
+    tr2.append(el('td',{html:'<span style="display:inline-flex;align-items:center;gap:8px"><span class="ico" style="width:16px;height:16px">'+r.icon+'</span><span style="font-size:12.5px">'+esc(r.name)+'</span></span>'}),
+     el('td',{style:'font-size:12px;color:'+(r.status==='Running'?'#107c10':'#ca5010'),text:r.status}),
+     el('td',{style:'text-align:right;font-size:12px;font-weight:600;color:'+cpuColor,text:r.cpuS}),
+     el('td',{style:'text-align:right;font-size:12px',text:r.memS}),
+     el('td',{style:'text-align:right;font-size:12px;color:var(--txt2)',text:r.disk}),
+     el('td',{style:'text-align:right;font-size:12px;color:var(--txt2)',text:r.net}),
+     el('td',{style:'text-align:right'},endBtn));
+    t.append(tr2);});
+   body.append(t);}
+  function drawPerf(){
+   const procs=getProcesses();
+   const totalCPU=Math.min(100,procs.reduce((s,p)=>s+p.cpu,0));
+   const totalMem=procs.reduce((s,p)=>s+p.mem,0);
+   const memPct=Math.min(100,totalMem/16384*100);
+   const diskUsed=Math.round(548+Math.random()*8);
+   const diskPct=diskUsed/1000*100;
+   const drawGauge=(label,value,max,color,unit,extra)=>{
+    const card=el('div',{style:'background:var(--card);border:1px solid var(--stroke);border-radius:8px;padding:16px 18px;margin-bottom:10px'});
+    const head=el('div',{style:'display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px'});
+    head.append(el('span',{style:'font-size:15px;font-weight:600',text:label}));
+    const valStr=typeof value==='number'?value.toFixed(0)+unit:value;
+    head.append(el('span',{style:'font-size:26px;font-weight:600;color:'+color,text:valStr}));
+    card.append(head);
+    const bar=el('div',{style:'height:8px;border-radius:4px;background:var(--stroke);overflow:hidden'});
+    const fill=el('div',{style:'height:100%;width:'+Math.min(100,value/max*100)+'%;background:'+color+';border-radius:4px;transition:width .4s'});
+    bar.append(fill);card.append(bar);
+    if(extra)card.append(el('div',{style:'font-size:11.5px;color:var(--txt2);margin-top:8px;line-height:1.6',html:extra}));
+    return card;};
+   body.append(el('div',{style:'font-size:18px;font-weight:600;padding:8px 4px 12px',text:'Performance'}));
+   body.append(drawGauge('CPU',totalCPU,100,totalCPU>80?'#c42b1c':totalCPU>50?'#ca5010':'#166f9e','%',
+    'Intel Core i5-12400F @ 2.50 GHz · 6 cores, 12 threads'));
+   body.append(drawGauge('Memory',memPct,100,memPct>80?'#c42b1c':memPct>60?'#ca5010':'#6b3fa0','%',
+    totalMem+' MB / 16,384 MB · '+Math.round(16384-totalMem)+' MB available'));
+   body.append(drawGauge('Disk (C:)',diskPct,100,diskPct>80?'#c42b1c':'#0f6fbf','%',
+    diskUsed+' GB / 1,000 GB · NVMe SSD'));
+   const netUp=(Math.random()*2.4).toFixed(1),netDn=(Math.random()*12.8).toFixed(1);
+   body.append(drawGauge('Network',0,100,'#107c10','',
+    'Wi-Fi 6 AX201 · 802.11ax 5 GHz<br>Upload: <b>'+netUp+' Mbps</b> · Download: <b>'+netDn+' Mbps</b>'));
+   const cpuHist=el('div',{style:'display:flex;gap:3px;align-items:flex-end;height:60px;margin:8px 0 4px'});
+   for(let i=0;i<30;i++){const h=Math.max(3,totalCPU*Math.random()*.9+8);
+    cpuHist.append(el('div',{style:'flex:1;height:'+h+'%;background:'+(totalCPU>80?'#c42b1c':'#166f9e')+';border-radius:2px;transition:height .3s'}));}
+   body.append(el('div',{style:'font-size:11px;color:var(--txt2);margin-bottom:2px',text:'CPU Usage History (30s)'}),cpuHist);
+   const memHist=el('div',{style:'display:flex;gap:3px;align-items:flex-end;height:60px;margin:8px 0 4px'});
+   for(let i=0;i<30;i++){const h=Math.max(3,memPct*Math.random()*.95+6);
+    memHist.append(el('div',{style:'flex:1;height:'+h+'%;background:'+(memPct>80?'#c42b1c':'#6b3fa0')+';border-radius:2px;transition:height .3s'}));}
+   body.append(el('div',{style:'font-size:11px;color:var(--txt2);margin-bottom:2px',text:'Memory Usage History (30s)'}),memHist);
+   body.append(el('div',{style:'margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:8px'},
+    el('div',{style:'background:var(--card);border:1px solid var(--stroke);border-radius:8px;padding:12px;font-size:12px;line-height:1.8'},
+     el('div',{style:'font-weight:600;font-size:13px;margin-bottom:4px',text:'CPU Details'}),
+     el('div',{html:'<span style="color:var(--txt2)">Name:</span> Intel Core i5-12400F'}),
+     el('div',{html:'<span style="color:var(--txt2)">Base clock:</span> 2.50 GHz'}),
+     el('div',{html:'<span style="color:var(--txt2)">Cores:</span> 6 physical, 12 logical'}),
+     el('div',{html:'<span style="color:var(--txt2)">Architecture:</span> Alder Lake (12th Gen)'}),
+     el('div',{html:'<span style="color:var(--txt2)">L3 Cache:</span> 18 MB'})),
+    el('div',{style:'background:var(--card);border:1px solid var(--stroke);border-radius:8px;padding:12px;font-size:12px;line-height:1.8'},
+     el('div',{style:'font-weight:600;font-size:13px;margin-bottom:4px',text:'GPU Details'}),
+     el('div',{html:'<span style="color:var(--txt2)">Name:</span> Intel UHD Graphics 730'}),
+     el('div',{html:'<span style="color:var(--txt2)">Type:</span> Integrated'}),
+     el('div',{html:'<span style="color:var(--txt2)">Driver:</span> v31.0.101'}),
+     el('div',{html:'<span style="color:var(--txt2)">VRAM:</span> Shared (up to 8 GB)'}),
+     el('div',{html:'<span style="color:var(--txt2)">DirectX:</span> 12 Ultimate'}))));}
+  function drawServices(){body.append(el('div',{style:'font-size:12.5px;color:var(--txt2);margin:6px 0',text:'Start/stop services — requires elevation for standard users.'}));
+   body.append(servicesTable(draw));}
+  W.body.append(el('div',{style:'display:flex;flex:1;min-height:0;overflow:hidden'},side,body));
+  W.every(1200,draw);draw();}};
 
 /* ============ APP: Event Viewer ============ */
 APPS.eventvwr={name:'Event Viewer',icon:AI.eventvwr,w:840,h:560,single:true,
@@ -3521,37 +3617,47 @@ el('div',{style:'font-size:12px;color:var(--txt2)',
     el('span',{style:'font-size:12.5px',text:e.msg}),
     el('span',{style:'margin-left:auto;color:var(--txt2);font-size:11px',text:new Date(e.t).toLocaleTimeString()}))));
    main.append(el('button',{class:'btn',style:'margin-top:8px',text:'Open Event Viewer',onclick:()=>openApp('eventvwr')}));}
-  function renderSystem(){
-   main.append(el('h1',{text:'System & Time'}));
-   const t24=el('button',{class:'tgl'+(state.settings.clock24?' on':'')});
-   t24.onclick=()=>{state.settings.clock24=!state.settings.clock24;save();tickClock();render()};
-   main.append(el('div',{class:'set-card'},el('span',{text:'24-hour clock'}),t24));
-   const tz=el('select',{style:'padding:6px;border:1px solid var(--stroke);border-radius:5px;background:var(--card);color:var(--txt);font:inherit'});
-   for(let h=-12;h<=14;h++)tz.append(el('option',{value:h*60,text:'UTC'+(h>=0?'+':'')+h}));
-   let cur=state.settings.tz;if(cur==null)cur=-new Date().getTimezoneOffset();
-   if(![...tz.options].some(o=>+o.value===cur))cur=Math.round(cur/60)*60;
-   tz.value=cur;
-   tz.onchange=()=>{state.settings.tz=+tz.value;save();tickClock();toast('Time zone updated')};
-   main.append(el('div',{class:'set-card'},el('span',{text:'Time zone'}),tz));
-   const rm=el('button',{class:'tgl'+(state.settings.reduceMotion?' on':'')});
-   rm.onclick=()=>{state.settings.reduceMotion=!state.settings.reduceMotion;save();applyTheme();render()};
-   main.append(el('div',{class:'set-card'},el('span',{text:'Reduce motion'}),rm));
-   const hc=el('button',{class:'tgl'+(state.settings.hc?' on':'')});
-   hc.onclick=()=>{state.settings.hc=!state.settings.hc;save();applyTheme();render()};
-   main.append(el('div',{class:'set-card'},el('span',{text:'High contrast'}),hc));
-   main.append(h2('Services'));
-   main.append(el('div',{style:'font-size:12.5px;color:var(--txt2);margin-bottom:8px',
-    text:'Stopping Mr.B Audio mutes all sound · stopping Mr.B Search disables Start search · stopping Mr.B Time freezes the clock.'}));
-   main.append(el('button',{class:'btn',text:'Open Services',onclick:()=>openApp('services')}));
-   main.append(h2('Storage & reset'));
-   let files=0;fsWalk(()=>files++);
-   main.append(el('div',{class:'set-card'},el('span',{text:'Storage'}),
-    el('span',{style:'margin-left:auto;color:var(--txt2)',
-     text:Object.keys(state.installed).length+' installed apps · '+files+' files · saved in this browser'})));
-   main.append(el('div',{class:'set-card'},el('span',{text:'Reset Mr.B OSs'}),
-    el('button',{class:'btn',style:'margin-left:auto',text:'Reset',
-     onclick:()=>adminDo('Reset Mr.B OSs and erase all data',()=>{
-      localStorage.removeItem('win11web');location.reload()})})));}
+   function renderSystem(){
+    main.append(el('h1',{text:'System & Time'}));
+    const aboutCard=el('div',{class:'set-card',style:'flex-wrap:wrap;gap:14px;align-items:flex-start;padding:18px'});
+    const aboutLogo=el('div',{style:'width:80px;height:80px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex:none;overflow:hidden;background:linear-gradient(135deg,#41a2f6 0%,#2f8fe0 38%,#17335c 100%);box-shadow:0 6px 20px rgba(47,143,224,.35)',
+     html:'<span style="font-family:Segoe UI,sans-serif;font-size:44px;font-weight:800;color:#fff;line-height:1;padding-bottom:3px">B</span>'});
+    const aboutInfo=el('div',{style:'flex:1;min-width:0'});
+    aboutInfo.append(el('div',{style:'font-size:18px;font-weight:600',text:'Mr.B OSs'}),
+     el('div',{style:'font-size:12px;color:var(--txt2);margin-top:2px',text:'Windows 11 Pro · Build 22631.4169'}),
+     el('div',{style:'font-size:12px;color:var(--txt2);margin-top:8px;line-height:1.8',
+      html:'<b style="color:var(--txt)">Processor</b> &nbsp;Intel Core i5-12400F @ 2.50 GHz (6C/12T)<br><b style="color:var(--txt)">RAM</b> &nbsp;16.0 GB DDR4-3200 · dual channel<br><b style="color:var(--txt)">GPU</b> &nbsp;Intel UHD Graphics 730<br><b style="color:var(--txt)">Storage</b> &nbsp;NVMe SSD 1 TB · 452 GB free<br><b style="color:var(--txt)">System type</b> &nbsp;64-bit, x64-based processor<br><b style="color:var(--txt)">Network</b> &nbsp;Wi-Fi 6 AX201 · Bluetooth 5.3'}));
+    aboutCard.append(aboutLogo,aboutInfo);
+    main.append(aboutCard);
+    const t24=el('button',{class:'tgl'+(state.settings.clock24?' on':'')});
+    t24.onclick=()=>{state.settings.clock24=!state.settings.clock24;save();tickClock();render()};
+    main.append(el('div',{class:'set-card'},el('span',{text:'24-hour clock'}),t24));
+    const tz=el('select',{style:'padding:6px;border:1px solid var(--stroke);border-radius:5px;background:var(--card);color:var(--txt);font:inherit'});
+    for(let h=-12;h<=14;h++)tz.append(el('option',{value:h*60,text:'UTC'+(h>=0?'+':'')+h}));
+    let cur=state.settings.tz;if(cur==null)cur=-new Date().getTimezoneOffset();
+    if(![...tz.options].some(o=>+o.value===cur))cur=Math.round(cur/60)*60;
+    tz.value=cur;
+    tz.onchange=()=>{state.settings.tz=+tz.value;save();tickClock();toast('Time zone updated')};
+    main.append(el('div',{class:'set-card'},el('span',{text:'Time zone'}),tz));
+    const rm=el('button',{class:'tgl'+(state.settings.reduceMotion?' on':'')});
+    rm.onclick=()=>{state.settings.reduceMotion=!state.settings.reduceMotion;save();applyTheme();render()};
+    main.append(el('div',{class:'set-card'},el('span',{text:'Reduce motion'}),rm));
+    const hc=el('button',{class:'tgl'+(state.settings.hc?' on':'')});
+    hc.onclick=()=>{state.settings.hc=!state.settings.hc;save();applyTheme();render()};
+    main.append(el('div',{class:'set-card'},el('span',{text:'High contrast'}),hc));
+    main.append(h2('Services'));
+    main.append(el('div',{style:'font-size:12.5px;color:var(--txt2);margin-bottom:8px',
+     text:'Stopping Mr.B Audio mutes all sound · stopping Mr.B Search disables Start search · stopping Mr.B Time freezes the clock.'}));
+    main.append(el('button',{class:'btn',text:'Open Services',onclick:()=>openApp('services')}));
+    main.append(h2('Storage & reset'));
+    let files=0;fsWalk(()=>files++);
+    main.append(el('div',{class:'set-card'},el('span',{text:'Storage'}),
+     el('span',{style:'margin-left:auto;color:var(--txt2)',
+      text:Object.keys(state.installed).length+' installed apps · '+files+' files · saved in this browser'})));
+    main.append(el('div',{class:'set-card'},el('span',{text:'Reset Mr.B OSs'}),
+     el('button',{class:'btn',style:'margin-left:auto',text:'Reset',
+      onclick:()=>adminDo('Reset Mr.B OSs and erase all data',()=>{
+       localStorage.removeItem('win11web');location.reload()})})));}
   function renderTools(){
    main.append(el('h1',{text:'Administrative Tools'}));
    const g=el('div',{class:'cp-cats'});
@@ -3634,18 +3740,37 @@ APPS.settings={name:'Settings',icon:AI.settings,w:900,h:620,single:true,
    const hc=el('button',{class:'tgl'+(state.settings.hc?' on':'')});
    hc.onclick=()=>{state.settings.hc=!state.settings.hc;save();applyTheme();draw()};
    main.append(el('div',{class:'set-card'},el('span',{text:'High contrast'}),hc));
-   main.append(h2('System'));
-   main.append(el('div',{class:'set-card'},el('span',{text:'Classic tools'}),
-    el('button',{class:'btn',style:'margin-left:auto',text:'Control Panel',
-     onclick:()=>openApp('controlpanel')})));
-   let files=0;fsWalk(()=>files++);
-   main.append(el('div',{class:'set-card'},el('span',{text:'Storage'}),
-    el('span',{style:'margin-left:auto;color:var(--txt2)',
-     text:Object.keys(state.installed).length+' apps · '+files+' files · saved in this browser'})));
-   main.append(el('div',{class:'set-card'},el('span',{text:'Reset Mr.B OSs'}),
-    el('button',{class:'btn',style:'margin-left:auto',text:'Reset',
-     onclick:()=>adminDo('Reset Mr.B OSs and erase all data',()=>{
-      localStorage.removeItem('win11web');location.reload()})})));
+    main.append(h2('System'));
+    const aboutCard=el('div',{class:'set-card',style:'flex-wrap:wrap;gap:14px;align-items:flex-start;padding:18px'});
+    const aboutLogo=el('div',{style:'width:96px;height:96px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex:none;overflow:hidden;background:linear-gradient(135deg,#41a2f6 0%,#2f8fe0 38%,#17335c 100%);box-shadow:0 6px 20px rgba(47,143,224,.35)',
+     html:'<span style="font-family:Segoe UI,sans-serif;font-size:52px;font-weight:800;color:#fff;line-height:1;padding-bottom:4px">B</span>'});
+    const aboutInfo=el('div',{style:'flex:1;min-width:0'});
+    aboutInfo.append(el('div',{style:'font-size:20px;font-weight:600',text:'Mr.B OSs'}),
+     el('div',{style:'font-size:12.5px;color:var(--txt2);margin-top:2px',text:'Windows 11 Pro · Build 22631.4169'}),
+     el('div',{style:'font-size:12px;color:var(--txt2);margin-top:8px;line-height:1.7',
+      html:'<b style="color:var(--txt)">Device name</b> &nbsp;MRB-PC<br><b style="color:var(--txt)">Processor</b> &nbsp;Intel(R) Core(TM) i5-12400F @ 2.50 GHz<br><b style="color:var(--txt)">Installed RAM</b> &nbsp;16.0 GB (15.8 GB usable)<br><b style="color:var(--txt)">Device ID</b> &nbsp;'+hashS('devid-'+(curUser().id)).toString(16).toUpperCase().slice(0,8)+'-'+hashS('devid2').toString(16).toUpperCase().slice(0,4)+'<br><b style="color:var(--txt)">Product ID</b> &nbsp;00331-10000-00001-AA'+(100+hashS('pid')).toString(16).toUpperCase()+'<br><b style="color:var(--txt)">System type</b> &nbsp;64-bit operating system, x64-based processor<br><b style="color:var(--txt)">Pen and touch</b> &nbsp;No pen or touch input is available for this display'}));
+    aboutCard.append(aboutLogo,aboutInfo);
+    main.append(aboutCard);
+    main.append(el('h3',{style:'font-size:14px;margin:14px 0 8px;font-weight:600',text:'Windows specifications'}));
+    const winSpec=el('div',{class:'set-card',style:'display:grid;grid-template-columns:1fr 1fr;gap:6px 24px;padding:14px 18px'});
+    const specRow=(k,v)=>el('div',{style:'font-size:12.5px;line-height:1.8'},el('span',{style:'color:var(--txt2)',text:k+': '}),el('span',{text:v}));
+    winSpec.append(specRow('Edition','Mr.B OSs Pro'),specRow('Version','23H2'),specRow('Installed on','01/09/2025'),specRow('OS build','22631.4169'),specRow('Experience','Mr.B Feature Experience Pack 1000.22700.1041.0'),specRow('Platform','Web Browser (HTML/CSS/JS)'));
+    main.append(winSpec);
+    main.append(el('h3',{style:'font-size:14px;margin:14px 0 8px;font-weight:600',text:'Device specifications'}));
+    const devSpec=el('div',{class:'set-card',style:'display:grid;grid-template-columns:1fr 1fr;gap:6px 24px;padding:14px 18px'});
+    devSpec.append(specRow('Processor','Intel Core i5-12400F · 6 Cores · 12 Threads @ 2.50 GHz'),specRow('Memory (RAM)','16.0 GB DDR4-3200 (2 × 8 GB)'),specRow('Graphics','Intel UHD Graphics 730 · Driver v31.0.101'),specRow('Storage','NVMe SSD 1 TB · 452 GB free'),specRow('Network','Wi-Fi 6 AX201 · 802.11ax 5 GHz'),specRow('Bluetooth','Bluetooth 5.3 Radio'),specRow('Audio','USB Audio Device · Speaker output'),specRow('Display','Generic PnP Monitor · 1920×1080 @ 60 Hz'));
+    main.append(devSpec);
+    main.append(el('div',{class:'set-card'},el('span',{text:'Classic tools'}),
+     el('button',{class:'btn',style:'margin-left:auto',text:'Control Panel',
+      onclick:()=>openApp('controlpanel')})));
+    let files=0;fsWalk(()=>files++);
+    main.append(el('div',{class:'set-card'},el('span',{text:'Storage'}),
+     el('span',{style:'margin-left:auto;color:var(--txt2)',
+      text:Object.keys(state.installed).length+' apps · '+files+' files · saved in this browser'})));
+    main.append(el('div',{class:'set-card'},el('span',{text:'Reset Mr.B OSs'}),
+     el('button',{class:'btn',style:'margin-left:auto',text:'Reset',
+      onclick:()=>adminDo('Reset Mr.B OSs and erase all data',()=>{
+       localStorage.removeItem('win11web');location.reload()})})));
   }
   W.body.append(el('div',{class:'set'},
    el('div',{class:'set-side'},
