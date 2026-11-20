@@ -1,0 +1,1984 @@
+<!doctype html>
+<html lang="en-NZ">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MR. B's Toast | 21-Step Algorithm Challenge</title>
+<meta name="description" content="Rebuild Mr. B's exact 21-step toast-making algorithm. Interactive Year 9 sequencing and debugging activity.">
+<style>
+  :root {
+    color-scheme: light;
+    --crust: #1d4ed8;
+    --crust-dark: #1e3a8a;
+    --toast: #2563eb;
+    --toast-light: #60a5fa;
+    --butter: #ffd84d;
+    --butter-light: #fef3c7;
+    --jam: #dc2626;
+    --purple: #0284c7;
+    --ink: #0f172a;
+    --muted: #475569;
+    --line: #cbd5e1;
+    --paper: #ffffff;
+    --bg: #f0f7ff;
+    --surface: #e0f2fe;
+    --success: #15803d;
+    --success-bg: #f0fdf4;
+    --error: #dc2626;
+    --error-bg: #fef2f2;
+    --shadow-sm: 0 2px 6px rgba(30, 58, 138, 0.07);
+    --shadow-md: 0 8px 24px rgba(30, 58, 138, 0.12);
+    --shadow-lg: 0 14px 36px rgba(30, 58, 138, 0.20);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    background-image:
+      radial-gradient(#bae6fd 1.2px, transparent 1.2px),
+      radial-gradient(#dbeafe 1.2px, var(--bg) 1.2px);
+    background-size: 32px 32px;
+    background-position: 0 0, 16px 16px;
+    font: 16px/1.5 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: var(--ink);
+    overflow-x: hidden;
+  }
+
+  /* Header */
+  header {
+    border-bottom: 2px solid var(--line);
+    background: var(--paper);
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .header-inner {
+    max-width: 1200px;
+    margin: auto;
+    padding: 12px 24px;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .brand-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .brand-badge {
+    background: linear-gradient(135deg, #2563eb 0%, #1e3a8a 100%);
+    color: #ffffff;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    font-size: 13px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    box-shadow: 0 2px 0 var(--crust-dark);
+  }
+
+  .tag {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+
+  .hud {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface);
+    border: 1px solid #bae6fd;
+    border-radius: 999px;
+    padding: 5px 12px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--crust-dark);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pill button, button.icon-btn {
+    appearance: none;
+    background: transparent;
+    border: 0;
+    font: inherit;
+    font-weight: 700;
+    color: inherit;
+    cursor: pointer;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  button.icon-btn {
+    background: var(--surface);
+    border: 1px solid #bae6fd;
+    border-radius: 999px;
+    padding: 5px 12px;
+    font-size: 12.5px;
+    color: var(--crust-dark);
+    transition: transform 0.1s, background 0.15s, border-color 0.15s;
+  }
+
+  button.icon-btn:hover {
+    border-color: var(--toast);
+    background: #dbeafe;
+  }
+
+  button.icon-btn:active {
+    transform: translateY(1px);
+  }
+
+  /* Main Container */
+  main {
+    max-width: 1200px;
+    margin: auto;
+    padding: 24px 24px 40px;
+  }
+
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 22px;
+    align-items: stretch;
+  }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    color: var(--toast);
+    text-transform: uppercase;
+    margin: 0 0 6px;
+  }
+
+  h1 {
+    font-size: clamp(28px, 3.8vw, 42px);
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    margin: 0 0 10px;
+    color: var(--crust-dark);
+  }
+
+  h1 .toast-icon {
+    display: inline-block;
+    animation: bobble 2.8s ease-in-out infinite;
+    transform-origin: bottom center;
+  }
+
+  @keyframes bobble {
+    0%, 100% { transform: rotate(-3deg) translateY(0); }
+    50% { transform: rotate(4deg) translateY(-3px); }
+  }
+
+  .intro {
+    color: var(--muted);
+    font-size: 15px;
+    margin: 0 0 16px;
+    max-width: 65ch;
+  }
+
+  /* Mode Switcher */
+  .mode-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    background: var(--paper);
+    border: 1.5px solid var(--line);
+    border-radius: 14px;
+    padding: 10px 14px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .mode-label {
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+  }
+
+  .segmented {
+    display: inline-flex;
+    background: var(--surface);
+    border-radius: 10px;
+    padding: 3px;
+    border: 1px solid #bae6fd;
+  }
+
+  .segmented button {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    padding: 6px 12px;
+    border-radius: 7px;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .segmented button[aria-pressed="true"] {
+    background: var(--crust);
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(30, 58, 138, 0.25);
+  }
+
+  .mode-desc {
+    font-size: 12.5px;
+    color: var(--muted);
+    flex: 1 1 200px;
+  }
+
+  /* Interactive Kitchen Stage */
+  .stage-card {
+    background: linear-gradient(180deg, #ffffff 0%, #eff6ff 100%);
+    border: 2px solid #bfdbfe;
+    border-radius: 18px;
+    padding: 14px 16px;
+    box-shadow: var(--shadow-md);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stage-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .stage-title {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--crust-dark);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .live-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.22);
+  }
+
+  .stage-status {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--crust-dark);
+    background: #dbeafe;
+    padding: 3px 10px;
+    border-radius: 999px;
+    border: 1px solid #93c5fd;
+  }
+
+  .kitchen-viewport {
+    width: 100%;
+    height: 158px;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #dbeafe 0%, #eff6ff 68%, #93c5fd 68%, #60a5fa 100%);
+    border: 1.5px solid #93c5fd;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .kitchen-viewport svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .speech-bubble {
+    margin-top: 8px;
+    background: var(--paper);
+    border: 1.5px solid #bfdbfe;
+    border-radius: 12px;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-height: 44px;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .speech-bubble.error {
+    border-color: var(--error);
+    background: var(--error-bg);
+    color: #991b1b;
+  }
+
+  .speech-bubble.success {
+    border-color: var(--success);
+    background: var(--success-bg);
+    color: #14532d;
+  }
+
+  .mr-b-avatar {
+    font-size: 22px;
+    flex: none;
+    line-height: 1;
+  }
+
+  /* Phase Progress Strip */
+  .phases-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-top: 18px;
+  }
+
+  .phase-chip {
+    background: var(--paper);
+    border: 1.5px solid var(--line);
+    border-radius: 12px;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--muted);
+    transition: all 0.2s ease;
+  }
+
+  .phase-chip.active {
+    border-color: var(--toast);
+    color: var(--crust-dark);
+    background: #eff6ff;
+  }
+
+  .phase-chip.done {
+    border-color: #4ade80;
+    background: var(--success-bg);
+    color: var(--success);
+  }
+
+  .phase-count {
+    font-size: 11px;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--crust-dark);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .phase-chip.done .phase-count {
+    background: #bbf7d0;
+    color: #14532d;
+  }
+
+  /* Two-Column Workspace */
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 22px;
+    margin-top: 18px;
+  }
+
+  .panel {
+    background: var(--paper);
+    border: 2px solid #cbd5e1;
+    border-radius: 18px;
+    padding: 18px;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .heading {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+
+  h2 {
+    font-size: 18px;
+    margin: 0;
+    color: var(--crust-dark);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .count {
+    font-size: 12.5px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    color: var(--crust-dark);
+    background: #dbeafe;
+    border: 1px solid #93c5fd;
+    padding: 3px 10px;
+    border-radius: 999px;
+  }
+
+  .hint {
+    font-size: 13px;
+    color: var(--muted);
+    margin: 0 0 12px;
+  }
+
+  .bank, .sequence {
+    height: clamp(380px, 56vh, 600px);
+    min-height: 360px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    padding: 4px 8px 8px 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border-radius: 12px;
+  }
+
+  .bank {
+    background: #f8fbff;
+    border: 1.5px dashed #93c5fd;
+    padding: 10px;
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  .bank.empty {
+    justify-content: center;
+    align-items: center;
+  }
+
+  .bank.empty:after {
+    content: "🍞 All 21 steps placed! Hit Check / Run Algorithm below.";
+    padding: 24px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  /* Step Cards */
+  .card {
+    appearance: none;
+    display: flex;
+    align-items: center;
+    text-align: left;
+    gap: 10px;
+    width: 100%;
+    border: 1.5px solid #cbd5e1;
+    background: var(--paper);
+    border-radius: 11px;
+    padding: 10px 12px;
+    min-height: 52px;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.35;
+    color: var(--ink);
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
+    flex-shrink: 0;
+    box-shadow: 0 2px 0 #cbd5e1;
+    transition: transform 0.12s, border-color 0.12s, box-shadow 0.12s, background 0.12s;
+  }
+
+  .grip {
+    font-size: 18px;
+    color: #64748b;
+    flex: none;
+    line-height: 1;
+  }
+
+  .card-text {
+    flex: 1;
+    overflow-wrap: anywhere;
+  }
+
+  .card-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: none;
+  }
+
+  .mini-btn {
+    appearance: none;
+    border: 1px solid #bae6fd;
+    background: var(--surface);
+    color: var(--crust-dark);
+    border-radius: 6px;
+    width: 26px;
+    height: 26px;
+    font-size: 12px;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s;
+  }
+
+  .mini-btn:hover {
+    background: #bae6fd;
+    border-color: var(--toast);
+  }
+
+  .card:hover:not(:disabled) {
+    border-color: var(--toast);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.14);
+  }
+
+  .card[aria-pressed="true"] {
+    outline: 3px solid var(--toast);
+    outline-offset: 1px;
+    background: #eff6ff;
+    border-color: var(--toast);
+  }
+
+  .card:focus-visible, button:focus-visible, .slot:focus-visible {
+    outline: 3px solid var(--purple);
+    outline-offset: 2px;
+  }
+
+  .card.dragging {
+    opacity: 0.35;
+  }
+
+  .card.hint-glow {
+    animation: pulseBlue 1.2s ease-in-out 3;
+    border-color: #2563eb;
+    background: #dbeafe;
+  }
+
+  @keyframes pulseBlue {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.65); }
+    50% { box-shadow: 0 0 0 8px rgba(37, 99, 235, 0); }
+  }
+
+  /* Sequence Rows & Slots */
+  .row {
+    display: grid;
+    grid-template-columns: 30px 1fr;
+    gap: 8px;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .number {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--crust-dark);
+    background: var(--surface);
+    border: 1px solid #bae6fd;
+    border-radius: 8px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .row.sim-running .number {
+    background: #2563eb;
+    color: #ffffff;
+    border-color: #1d4ed8;
+    transform: scale(1.1);
+  }
+
+  .row.sim-ok .number {
+    background: #16a34a;
+    color: white;
+    border-color: #15803d;
+  }
+
+  .row.sim-fail .number {
+    background: var(--error);
+    color: white;
+    border-color: #991b1b;
+  }
+
+  .slot {
+    min-height: 52px;
+    border: 1.5px dashed #93c5fd;
+    background: #f8fbff;
+    border-radius: 11px;
+    display: flex;
+    align-items: center;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s;
+  }
+
+  .slot.empty:after {
+    content: "Drop step here or click a selected card";
+    font-size: 12.5px;
+    color: #64748b;
+    padding: 12px 14px;
+  }
+
+  .slot.over, .bank.over {
+    background: #dbeafe;
+    border-color: var(--toast);
+    border-style: solid;
+  }
+
+  .slot .card {
+    border: 0;
+    box-shadow: none;
+    min-height: 49px;
+    border-radius: 9.5px;
+    background: #ffffff;
+  }
+
+  .row.sim-running .slot {
+    border: 2px solid var(--toast);
+    background: #eff6ff;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.2);
+  }
+
+  .row.sim-ok .slot {
+    border: 2px solid #4ade80;
+    background: var(--success-bg);
+  }
+
+  .row.sim-fail .slot {
+    border: 2px solid var(--error);
+    background: var(--error-bg);
+    animation: shake 0.45s cubic-bezier(.36,.07,.19,.97) both;
+  }
+
+  .completed .slot {
+    border-style: solid;
+    border-color: #4ade80;
+    background: var(--success-bg);
+  }
+
+  .completed .card {
+    cursor: default;
+    background: var(--success-bg);
+  }
+
+  .completed .number {
+    background: var(--success);
+    color: white;
+    border-color: var(--success);
+  }
+
+  /* Controls Bar */
+  .controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-top: 20px;
+    background: var(--paper);
+    border: 2px solid #cbd5e1;
+    border-radius: 16px;
+    padding: 14px 18px;
+    box-shadow: var(--shadow-sm);
+    flex-wrap: wrap;
+  }
+
+  .buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  button.action {
+    border: 2px solid var(--crust-dark);
+    background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
+    color: #ffffff;
+    border-radius: 11px;
+    padding: 11px 20px;
+    font: inherit;
+    font-size: 14.5px;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 3px 0 var(--crust-dark);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: transform 0.1s, filter 0.15s;
+  }
+
+  button.action:hover:not(:disabled) {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+  }
+
+  button.action:active:not(:disabled) {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 var(--crust-dark);
+  }
+
+  button.secondary {
+    background: var(--paper);
+    color: var(--crust-dark);
+    border: 1.5px solid #93c5fd;
+    box-shadow: 0 2px 0 #cbd5e1;
+  }
+
+  button.secondary:hover:not(:disabled) {
+    background: #eff6ff;
+    border-color: var(--toast);
+  }
+
+  button.hint-btn {
+    background: #e0f2fe;
+    color: #0369a1;
+    border: 1.5px solid #7dd3fc;
+    box-shadow: 0 2px 0 #38bdf8;
+  }
+
+  button.hint-btn:hover:not(:disabled) {
+    background: #bae6fd;
+  }
+
+  button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none !important;
+  }
+
+  .feedback {
+    font-size: 16px;
+    font-weight: 800;
+    min-height: 26px;
+    margin: 0;
+  }
+
+  .feedback.error { color: var(--error); }
+  .feedback.success { color: var(--success); }
+
+  /* Explanation Footer */
+  .explanation {
+    margin-top: 24px;
+    background: var(--paper);
+    border: 1.5px solid #cbd5e1;
+    border-radius: 16px;
+    padding: 18px 22px;
+  }
+
+  .explanation h2 {
+    font-size: 16px;
+    margin-bottom: 6px;
+  }
+
+  .explanation p {
+    font-size: 14px;
+    color: var(--muted);
+    margin: 6px 0 0;
+  }
+
+  .note {
+    font-size: 12.5px;
+    color: var(--muted);
+    margin-top: 12px;
+  }
+
+  /* Touch Ghost & Confetti Canvas */
+  .touch-ghost {
+    position: fixed;
+    pointer-events: none;
+    z-index: 50;
+    width: 300px;
+    opacity: 0.94;
+    box-shadow: var(--shadow-lg);
+    transform: rotate(2deg);
+  }
+
+  #confetti-canvas {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 60;
+  }
+
+  @keyframes shake {
+    10%, 90% { transform: translate3d(-2px, 0, 0); }
+    20%, 80% { transform: translate3d(4px, 0, 0); }
+    30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
+    40%, 60% { transform: translate3d(6px, 0, 0); }
+  }
+
+  .shake-panel {
+    animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+  }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .hero-grid {
+      grid-template-columns: 1fr;
+    }
+    .phases-bar {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 700px) {
+    .header-inner { padding: 10px 14px; }
+    .tag { display: none; }
+    main { padding: 16px 12px 32px; }
+    .layout {
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .panel {
+      padding: 10px 8px;
+      border-radius: 14px;
+    }
+    h2 { font-size: 14px; }
+    .hint { font-size: 11.5px; min-height: 34px; }
+    .card {
+      font-size: 12px;
+      padding: 8px 7px;
+      min-height: 62px;
+      gap: 5px;
+    }
+    .card-actions {
+      flex-direction: column;
+      gap: 2px;
+    }
+    .mini-btn {
+      width: 22px;
+      height: 22px;
+      font-size: 10px;
+    }
+    .slot { min-height: 62px; }
+    .slot .card { min-height: 59px; }
+    .slot.empty:after { font-size: 11px; padding: 8px; }
+    .row { grid-template-columns: 22px 1fr; gap: 4px; }
+    .number { font-size: 11px; height: 24px; }
+    .bank, .sequence { height: 54vh; min-height: 340px; }
+    .touch-ghost { width: 220px; }
+    .controls { flex-direction: column; align-items: stretch; }
+    .buttons { justify-content: center; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+<canvas id="confetti-canvas"></canvas>
+
+<header>
+  <div class="header-inner">
+    <div class="brand-wrap">
+      <span class="brand-badge">MR. B'S KITCHEN LAB</span>
+      <span class="tag">YEAR 9 · ALGORITHMS &amp; SEQUENCING</span>
+    </div>
+    <div class="hud">
+      <span class="pill" title="Elapsed time">⏱️ <span id="timer">00:00</span></span>
+      <span class="pill" title="Best completion time">🏆 <span id="best-time">--:--</span></span>
+      <span class="pill" title="Attempts made">🎯 <span id="attempts">0</span> tries</span>
+      <button type="button" class="icon-btn" id="sound-toggle" aria-pressed="true" title="Toggle sound effects">🔊 Sound On</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="hero-grid">
+    <div>
+      <p class="eyebrow">⚡ Deterministic Algorithm Challenge</p>
+      <h1><span class="toast-icon" aria-hidden="true">🍞</span>Make MR. B’s toast. All 21 steps.</h1>
+      <p class="intro">Rebuild Mr. B’s exact 21-step toast-making sequence, from first to last. Every step must be in its exact position—computers follow instructions literally, so one out-of-order step breaks the whole breakfast!</p>
+      <div class="mode-bar" role="region" aria-label="Game mode selection">
+        <span class="mode-label">Mode:</span>
+        <div class="segmented" role="group" aria-label="Choose verification mode">
+          <button type="button" id="mode-sim" aria-pressed="true">🤖 Kitchen Simulator</button>
+          <button type="button" id="mode-classic" aria-pressed="false">🔥 Classic Strict</button>
+        </div>
+        <span class="mode-desc" id="mode-desc">Runs your 21 steps live in Mr. B’s kitchen and shows where a bug happens!</span>
+      </div>
+    </div>
+
+    <!-- Live Interactive Kitchen Stage -->
+    <aside class="stage-card" aria-label="Mr. B's Kitchen Visualizer">
+      <div class="stage-header">
+        <span class="stage-title"><span class="live-dot"></span> MR. B's Kitchen Cam</span>
+        <span class="stage-status" id="stage-status">Ready to cook</span>
+      </div>
+      <div class="kitchen-viewport" id="kitchen-viewport">
+        <svg viewBox="0 0 420 160" aria-hidden="true">
+          <!-- Wall Outlet -->
+          <g id="viz-outlet" transform="translate(22, 34)">
+            <rect x="0" y="0" width="32" height="44" rx="5" fill="#ffffff" stroke="#cbb8a3" stroke-width="2"/>
+            <circle cx="16" cy="14" r="2.5" fill="#462008"/>
+            <line x1="11" y1="22" x2="13" y2="27" stroke="#462008" stroke-width="2" stroke-linecap="round"/>
+            <line x1="21" y1="22" x2="19" y2="27" stroke="#462008" stroke-width="2" stroke-linecap="round"/>
+            <!-- Switch indicator -->
+            <rect id="viz-switch" x="12" y="32" width="8" height="6" rx="1.5" fill="#cbd5e1"/>
+          </g>
+
+          <!-- Power Cord -->
+          <path id="viz-cord" d="M 95 96 Q 65 110 42 82" fill="none" stroke="#334155" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="4 4" opacity="0.45"/>
+          <!-- Plug Head -->
+          <g id="viz-plug" transform="translate(28, 72)">
+            <rect x="0" y="0" width="16" height="14" rx="3" fill="#1e293b"/>
+            <line x1="5" y1="-4" x2="5" y2="0" stroke="#94a3b8" stroke-width="2"/>
+            <line x1="11" y1="-4" x2="11" y2="0" stroke="#94a3b8" stroke-width="2"/>
+          </g>
+
+          <!-- Bread Bag -->
+          <g id="viz-bread-bag" transform="translate(66, 56)">
+            <rect x="0" y="14" width="44" height="52" rx="8" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+            <!-- Bread slices inside -->
+            <rect x="6" y="20" width="32" height="40" rx="4" fill="#f5deb3" stroke="#b45309" stroke-width="1.5"/>
+            <text x="22" y="44" font-size="8" font-weight="800" fill="#92400e" text-anchor="middle">BREAD</text>
+            <!-- Bag top neck -->
+            <path id="viz-bag-top" d="M 6 14 L 14 4 L 30 4 L 38 14 Z" fill="#fde68a" stroke="#d97706" stroke-width="1.5"/>
+            <!-- Clip -->
+            <rect id="viz-bag-clip" x="14" y="8" width="16" height="5" rx="2" fill="#ef4444"/>
+          </g>
+
+          <!-- Slice on Counter / In Toaster / On Plate -->
+          <g id="viz-slice" transform="translate(148, 42)" opacity="0">
+            <path d="M 4 12 C 0 12 0 4 6 2 C 14 -1 26 -1 34 2 C 40 4 40 12 36 12 L 35 34 C 35 36 33 38 30 38 L 10 38 C 7 38 5 36 5 34 Z" fill="#f5deb3" stroke="#854d0e" stroke-width="2.5" id="viz-slice-body"/>
+            <!-- Butter spread layer -->
+            <path id="viz-butter-spread" d="M 10 14 Q 20 10 30 14 Q 31 24 28 30 Q 20 33 11 30 Q 9 22 10 14 Z" fill="#fde047" opacity="0"/>
+          </g>
+
+          <!-- Toaster -->
+          <g id="viz-toaster" transform="translate(126, 62)">
+            <!-- Glow inside slots -->
+            <rect id="viz-heater-glow" x="14" y="2" width="56" height="8" rx="3" fill="#ff4500" opacity="0"/>
+            <!-- Main Blue Chrome Body -->
+            <rect x="4" y="6" width="76" height="54" rx="12" fill="#3b82f6" stroke="#1e3a8a" stroke-width="2.5"/>
+            <rect x="10" y="12" width="64" height="22" rx="6" fill="#93c5fd" opacity="0.55"/>
+            <!-- Feet -->
+            <rect x="12" y="60" width="12" height="5" rx="2" fill="#1e293b"/>
+            <rect x="60" y="60" width="12" height="5" rx="2" fill="#1e293b"/>
+            <!-- Lever Track & Handle -->
+            <rect x="82" y="16" width="5" height="34" rx="2.5" fill="#1e3a8a"/>
+            <g id="viz-lever" transform="translate(80, 16)">
+              <rect x="0" y="0" width="14" height="8" rx="3" fill="#facc15" stroke="#854d0e" stroke-width="1.5"/>
+            </g>
+            <!-- Power LED -->
+            <circle id="viz-toaster-led" cx="20" cy="48" r="3.5" fill="#94a3b8"/>
+          </g>
+
+          <!-- Plate -->
+          <g id="viz-plate" transform="translate(230, 108)">
+            <ellipse cx="42" cy="12" rx="42" ry="10" fill="#ffffff" stroke="#94a3b8" stroke-width="2"/>
+            <ellipse cx="42" cy="11" rx="28" ry="6" fill="none" stroke="#cbd5e1" stroke-width="1.5"/>
+          </g>
+
+          <!-- Butter Tub -->
+          <g id="viz-butter-tub" transform="translate(324, 82)">
+            <path d="M 4 10 L 44 10 L 40 36 L 8 36 Z" fill="#facc15" stroke="#ca8a04" stroke-width="2"/>
+            <text x="24" y="26" font-size="7.5" font-weight="900" fill="#713f12" text-anchor="middle">BUTTER</text>
+            <!-- Tub Lid -->
+            <rect id="viz-butter-lid" x="2" y="5" width="44" height="6" rx="2.5" fill="#eab308" stroke="#a16207" stroke-width="1.5"/>
+          </g>
+
+          <!-- Butter Knife -->
+          <g id="viz-knife" transform="translate(332, 62)">
+            <!-- Handle -->
+            <rect x="0" y="2" width="22" height="7" rx="3.5" fill="#7c2d12"/>
+            <!-- Blade -->
+            <path d="M 22 3 L 46 3 C 50 3 51 8 46 8 L 22 8 Z" fill="#cbd5e1" stroke="#64748b" stroke-width="1"/>
+            <!-- Butter blob on tip -->
+            <ellipse id="viz-knife-butter" cx="45" cy="5.5" rx="5" ry="3.5" fill="#fef08a" stroke="#eab308" stroke-width="1" opacity="0"/>
+          </g>
+
+          <!-- Sparks / Smoke / Glitch FX layer -->
+          <g id="viz-fx" opacity="0">
+            <text x="210" y="42" font-size="26" text-anchor="middle" id="viz-fx-emoji">💥</text>
+          </g>
+        </svg>
+      </div>
+      <div class="speech-bubble" id="mr-b-speech" role="status" aria-live="polite">
+        <span class="mr-b-avatar" id="mr-b-avatar" aria-hidden="true">🧑‍🍳</span>
+        <span id="mr-b-text">Kia ora! Drag or click the 21 cards into exact order so I can make my morning toast.</span>
+      </div>
+    </aside>
+  </div>
+
+  <!-- 4 Algorithm Phases -->
+  <div class="phases-bar" aria-label="Algorithm phases progress">
+    <div class="phase-chip" id="phase-1"><span>1. Setup &amp; Bread</span><span class="phase-count" id="phase-1-count">0/6</span></div>
+    <div class="phase-chip" id="phase-2"><span>2. Toasting</span><span class="phase-count" id="phase-2-count">0/5</span></div>
+    <div class="phase-chip" id="phase-3"><span>3. Buttering</span><span class="phase-count" id="phase-3-count">0/6</span></div>
+    <div class="phase-chip" id="phase-4"><span>4. Tidy &amp; Eat</span><span class="phase-count" id="phase-4-count">0/4</span></div>
+  </div>
+
+  <!-- Main Workspace -->
+  <div class="layout" id="workspace">
+    <section class="panel" aria-labelledby="bank-title">
+      <div class="heading">
+        <h2 id="bank-title">📦 Unplaced Steps</h2>
+        <span class="count" id="remaining">21 remaining</span>
+      </div>
+      <p class="hint">Drag a card, click to select, or double-click / tap <strong>+</strong> to send to the next open slot.</p>
+      <div class="bank" id="bank" aria-label="Unplaced instructions"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="order-title">
+      <div class="heading">
+        <h2 id="order-title">📋 MR. B’s Algorithm</h2>
+        <span class="count" id="progress">0 / 21</span>
+      </div>
+      <p class="hint">Start at 1. Use drag, click, or ▲/▼ buttons on placed cards to fine-tune.</p>
+      <div class="sequence" id="sequence"></div>
+    </section>
+  </div>
+
+  <!-- Action Controls -->
+  <div class="controls">
+    <div class="buttons">
+      <button class="action" id="check" disabled>▶ Run &amp; Check Order</button>
+      <button class="action hint-btn" id="hint-btn">💡 Hint (<span id="hints-left">3</span>)</button>
+      <button class="action secondary" id="reset">🔄 Shuffle &amp; Restart</button>
+    </div>
+    <p id="feedback" class="feedback" role="status" aria-live="polite" aria-atomic="true"></p>
+  </div>
+
+  <section class="explanation" aria-labelledby="why-title">
+    <h2 id="why-title">🧠 Why must all 21 steps be in this exact order?</h2>
+    <p>A completed algorithm can look obvious once it’s written down, but designing its exact steps from scratch requires precision. In Computer Science, a <strong>deterministic algorithm</strong> follows the exact same sequence of instructions and produces the exact same result every time when given the same starting conditions.</p>
+    <p class="note"><strong>Shortcuts:</strong> Drag &amp; drop cards, click a card then click a numbered slot, double-click any unplaced card to auto-place it, or use keyboard <kbd>Enter</kbd>/<kbd>Space</kbd> to select and place.</p>
+  </section>
+</main>
+
+<script>
+'use strict';
+
+// Exact 21 steps & expected order preserved from original activity
+const STEPS = [
+  {"id": "1", "text": "Plug in the toaster and switch it on"},
+  {"id": "2", "text": "Remove any excess butter from the tip of the knife"},
+  {"id": "3", "text": "Place the toast on a plate"},
+  {"id": "4", "text": "Put lid on butter"},
+  {"id": "5", "text": "Find bag of bread"},
+  {"id": "6", "text": "Get butter"},
+  {"id": "7", "text": "Put buttered toast on plate"},
+  {"id": "8", "text": "Push the lever to lower the toast"},
+  {"id": "9", "text": "Get knife"},
+  {"id": "10", "text": "Take the plate and toast away and eat (the toast only!)"},
+  {"id": "11", "text": "Move the knife backwards and forwards in a sweeping motion across the bread to spread it at an even thickness"},
+  {"id": "12", "text": "Place 5 grams of butter on the tip of the knife"},
+  {"id": "13", "text": "Position the tip of the knife on the upwards side of the slice of bread with the butter between the knife and the bread"},
+  {"id": "14", "text": "Get a slice of bread"},
+  {"id": "15", "text": "Open bag"},
+  {"id": "16", "text": "Put butter and bread away"},
+  {"id": "17", "text": "Wait a few minutes for the toast to pop up out of the toaster"},
+  {"id": "18", "text": "Place bread in the toaster"},
+  {"id": "19", "text": "Put knife on bench"},
+  {"id": "20", "text": "Take the toast out of the machine being careful not to burn your hands"},
+  {"id": "21", "text": "Put clip back on bread bag"}
+];
+
+const EXPECTED_ORDER = ["1", "5", "15", "14", "21", "18", "8", "6", "9", "17", "20", "3", "12", "13", "11", "2", "7", "19", "4", "16", "10"];
+
+const STEP_MESSAGES = {
+  "1": "Click! Toaster plugged in and wall switch flipped ON.",
+  "5": "Found the fresh loaf of bread on the bench.",
+  "15": "Bread bag opened and ready.",
+  "14": "Pulled out one fresh slice of bread.",
+  "21": "Clip snapped back onto the bread bag so it stays fresh!",
+  "18": "Slice dropped neatly into the toaster slot.",
+  "8": "Lever pushed down — heating elements warming up!",
+  "6": "Grabbed the tub of butter from the fridge.",
+  "9": "Picked up a clean butter knife.",
+  "17": "Waiting patiently... DING! Toast popped up golden brown!",
+  "20": "Carefully lifted the hot toast out without burning fingers.",
+  "3": "Placed the warm toast onto the plate.",
+  "12": "Scooped 5 grams of butter onto the tip of the knife.",
+  "13": "Positioned the buttered knife tip on the top face of the toast.",
+  "11": "Swept the knife back and forth for an even layer of melted butter.",
+  "2": "Wiped excess butter off the tip of the knife.",
+  "7": "Placed the freshly buttered toast squarely on the plate.",
+  "19": "Set the butter knife safely down on the bench.",
+  "4": "Clicked the lid back onto the butter tub.",
+  "16": "Put the butter and bread neatly back away.",
+  "10": "Breakfast is served! Eating the toast (and ONLY the toast)!"
+};
+
+// State
+let slots = Array(STEPS.length).fill(null);
+let bank = [];
+let selected = null;
+let dragged = null;
+let complete = false;
+let simRunning = false;
+let mode = 'sim'; // 'sim' | 'classic'
+let soundOn = true;
+let attempts = 0;
+let hintsLeft = 3;
+let timerSeconds = 0;
+let timerInterval = null;
+let bestTimeSeconds = null;
+
+// DOM Elements
+const bankEl = document.getElementById('bank');
+const seqEl = document.getElementById('sequence');
+const feedbackEl = document.getElementById('feedback');
+const checkBtn = document.getElementById('check');
+const hintBtn = document.getElementById('hint-btn');
+const resetBtn = document.getElementById('reset');
+const timerEl = document.getElementById('timer');
+const bestTimeEl = document.getElementById('best-time');
+const attemptsEl = document.getElementById('attempts');
+const hintsLeftEl = document.getElementById('hints-left');
+const soundToggleBtn = document.getElementById('sound-toggle');
+const modeSimBtn = document.getElementById('mode-sim');
+const modeClassicBtn = document.getElementById('mode-classic');
+const modeDescEl = document.getElementById('mode-desc');
+const mrBSpeechEl = document.getElementById('mr-b-speech');
+const mrBAvatarEl = document.getElementById('mr-b-avatar');
+const mrBTextEl = document.getElementById('mr-b-text');
+const stageStatusEl = document.getElementById('stage-status');
+
+// Web Audio API Sound Synthesizer (Zero external URLs)
+let audioCtx = null;
+function playTone(freq, type = 'sine', duration = 0.09, gainVal = 0.12, delay = 0) {
+  if (!soundOn) return;
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime + delay);
+    gain.gain.setValueAtTime(gainVal, audioCtx.currentTime + delay);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + delay + duration);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(audioCtx.currentTime + delay);
+    osc.stop(audioCtx.currentTime + delay + duration);
+  } catch (e) {
+    // Ignore audio errors on restricted devices
+  }
+}
+
+function sfxPlace() { playTone(520, 'triangle', 0.07, 0.12); }
+function sfxSelect() { playTone(660, 'sine', 0.05, 0.08); }
+function sfxStep() { playTone(440, 'sine', 0.06, 0.09); }
+function sfxPop() {
+  playTone(587.33, 'triangle', 0.1, 0.15, 0);
+  playTone(880, 'triangle', 0.16, 0.15, 0.08);
+}
+function sfxError() {
+  playTone(190, 'sawtooth', 0.18, 0.14, 0);
+  playTone(145, 'sawtooth', 0.25, 0.14, 0.14);
+}
+function sfxWin() {
+  [523.25, 659.25, 783.99, 1046.50].forEach((n, i) => {
+    playTone(n, 'triangle', 0.22, 0.15, i * 0.11);
+  });
+}
+
+// Timer formatting & management
+function formatTime(sec) {
+  const m = String(Math.floor(sec / 60)).padStart(2, '0');
+  const s = String(sec % 60).padStart(2, '0');
+  return `${m}:${s}`;
+}
+
+function startTimer() {
+  stopTimer();
+  timerInterval = setInterval(() => {
+    if (!complete && !simRunning) {
+      timerSeconds++;
+      timerEl.textContent = formatTime(timerSeconds);
+    }
+  }, 1000);
+}
+
+function stopTimer() {
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+}
+
+// Shuffle helper
+function shuffled(ids) {
+  const arr = [...ids];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// Speech bubble & status updates
+function setSpeech(text, type = '', avatar = '🧑‍🍳', status = null) {
+  mrBTextEl.textContent = text;
+  mrBAvatarEl.textContent = avatar;
+  mrBSpeechEl.className = 'speech-bubble' + (type ? ' ' + type : '');
+  if (status) stageStatusEl.textContent = status;
+}
+
+function setMessage(text, type = '') {
+  feedbackEl.textContent = text;
+  feedbackEl.className = 'feedback' + (type ? ' ' + type : '');
+}
+
+// Visual Kitchen SVG State Controller
+function resetKitchenVisuals() {
+  document.getElementById('viz-switch').setAttribute('fill', '#cbd5e1');
+  document.getElementById('viz-cord').setAttribute('stroke-dasharray', '4 4');
+  document.getElementById('viz-cord').setAttribute('opacity', '0.45');
+  document.getElementById('viz-toaster-led').setAttribute('fill', '#94a3b8');
+  document.getElementById('viz-heater-glow').setAttribute('opacity', '0');
+  document.getElementById('viz-lever').setAttribute('transform', 'translate(80, 16)');
+  document.getElementById('viz-bag-clip').setAttribute('opacity', '1');
+  document.getElementById('viz-bag-top').setAttribute('transform', 'translate(0,0)');
+  const slice = document.getElementById('viz-slice');
+  slice.setAttribute('opacity', '0');
+  slice.setAttribute('transform', 'translate(148, 42)');
+  document.getElementById('viz-slice-body').setAttribute('fill', '#f5deb3');
+  document.getElementById('viz-butter-spread').setAttribute('opacity', '0');
+  document.getElementById('viz-butter-lid').setAttribute('transform', 'translate(0,0)');
+  document.getElementById('viz-knife').setAttribute('transform', 'translate(332, 62)');
+  document.getElementById('viz-knife-butter').setAttribute('opacity', '0');
+  document.getElementById('viz-fx').setAttribute('opacity', '0');
+}
+
+function applyStepVisual(stepId) {
+  const slice = document.getElementById('viz-slice');
+  switch (stepId) {
+    case "1": // Plug in toaster
+      document.getElementById('viz-switch').setAttribute('fill', '#22c55e');
+      document.getElementById('viz-cord').removeAttribute('stroke-dasharray');
+      document.getElementById('viz-cord').setAttribute('opacity', '1');
+      document.getElementById('viz-toaster-led').setAttribute('fill', '#22c55e');
+      break;
+    case "5": // Find bread
+      document.getElementById('viz-bread-bag').setAttribute('transform', 'translate(66, 52)');
+      break;
+    case "15": // Open bag
+      document.getElementById('viz-bag-clip').setAttribute('opacity', '0');
+      document.getElementById('viz-bag-top').setAttribute('transform', 'translate(0, -3)');
+      break;
+    case "14": // Get slice
+      slice.setAttribute('opacity', '1');
+      slice.setAttribute('transform', 'translate(115, 36)');
+      break;
+    case "21": // Clip back on
+      document.getElementById('viz-bag-clip').setAttribute('opacity', '1');
+      document.getElementById('viz-bag-top').setAttribute('transform', 'translate(0, 0)');
+      break;
+    case "18": // Place in toaster
+      slice.setAttribute('opacity', '1');
+      slice.setAttribute('transform', 'translate(148, 42)');
+      break;
+    case "8": // Lower lever
+      document.getElementById('viz-lever').setAttribute('transform', 'translate(80, 40)');
+      document.getElementById('viz-heater-glow').setAttribute('opacity', '0.95');
+      slice.setAttribute('transform', 'translate(148, 56)');
+      break;
+    case "6": // Get butter
+      document.getElementById('viz-butter-lid').setAttribute('transform', 'translate(10, -10) rotate(12)');
+      break;
+    case "9": // Get knife
+      document.getElementById('viz-knife').setAttribute('transform', 'translate(310, 50) rotate(-12)');
+      break;
+    case "17": // Toast pops up
+      document.getElementById('viz-lever').setAttribute('transform', 'translate(80, 16)');
+      document.getElementById('viz-heater-glow').setAttribute('opacity', '0');
+      document.getElementById('viz-slice-body').setAttribute('fill', '#d97706');
+      slice.setAttribute('transform', 'translate(148, 36)');
+      break;
+    case "20": // Take toast out
+      slice.setAttribute('transform', 'translate(210, 44)');
+      break;
+    case "3": // Place on plate
+      slice.setAttribute('transform', 'translate(252, 76)');
+      break;
+    case "12": // 5g butter on knife
+      document.getElementById('viz-knife-butter').setAttribute('opacity', '1');
+      document.getElementById('viz-knife').setAttribute('transform', 'translate(295, 64) rotate(-8)');
+      break;
+    case "13": // Position knife on bread
+      document.getElementById('viz-knife').setAttribute('transform', 'translate(254, 72)');
+      break;
+    case "11": // Spread butter
+      document.getElementById('viz-butter-spread').setAttribute('opacity', '0.95');
+      document.getElementById('viz-knife-butter').setAttribute('opacity', '0.2');
+      break;
+    case "2": // Remove excess butter
+      document.getElementById('viz-knife-butter').setAttribute('opacity', '0');
+      break;
+    case "7": // Buttered toast on plate
+      slice.setAttribute('transform', 'translate(252, 76)');
+      break;
+    case "19": // Knife on bench
+      document.getElementById('viz-knife').setAttribute('transform', 'translate(332, 62)');
+      break;
+    case "4": // Lid on butter
+      document.getElementById('viz-butter-lid').setAttribute('transform', 'translate(0, 0)');
+      break;
+    case "16": // Put butter & bread away
+      document.getElementById('viz-bread-bag').setAttribute('transform', 'translate(66, 56)');
+      break;
+    case "10": // Eat toast!
+      slice.setAttribute('opacity', '0');
+      const fx = document.getElementById('viz-fx');
+      document.getElementById('viz-fx-emoji').textContent = '😋✨';
+      fx.setAttribute('opacity', '1');
+      break;
+  }
+}
+
+function showFailVisual(emoji = '💥') {
+  const fx = document.getElementById('viz-fx');
+  document.getElementById('viz-fx-emoji').textContent = emoji;
+  fx.setAttribute('opacity', '1');
+}
+
+// Update the 4 Phase Progress Chips
+function updatePhaseProgress() {
+  const phases = [
+    { el: 'phase-1', countEl: 'phase-1-count', start: 0, len: 6 },
+    { el: 'phase-2', countEl: 'phase-2-count', start: 6, len: 5 },
+    { el: 'phase-3', countEl: 'phase-3-count', start: 11, len: 6 },
+    { el: 'phase-4', countEl: 'phase-4-count', start: 17, len: 4 }
+  ];
+
+  phases.forEach(p => {
+    let filled = 0;
+    let exact = 0;
+    for (let i = p.start; i < p.start + p.len; i++) {
+      if (slots[i] !== null) filled++;
+      if (slots[i] === EXPECTED_ORDER[i]) exact++;
+    }
+    const chip = document.getElementById(p.el);
+    const countSpan = document.getElementById(p.countEl);
+    countSpan.textContent = `${filled}/${p.len}`;
+    chip.classList.toggle('done', exact === p.len);
+    chip.classList.toggle('active', filled > 0 && exact < p.len);
+  });
+}
+
+// Reset game state
+function reset(keepMessage = false) {
+  if (simRunning) return;
+  slots.fill(null);
+  bank = shuffled(STEPS.map(s => s.id));
+  selected = null;
+  dragged = null;
+  complete = false;
+  hintsLeft = 3;
+  hintsLeftEl.textContent = hintsLeft;
+  hintBtn.disabled = false;
+  timerSeconds = 0;
+  timerEl.textContent = '00:00';
+  document.querySelector('main').classList.remove('completed');
+  resetKitchenVisuals();
+  if (!keepMessage) {
+    setMessage('');
+    setSpeech('Kia ora! Drag or click the 21 cards into exact order so I can make my morning toast.', '', '🧑‍🍳', 'Ready to cook');
+  }
+  render();
+  bankEl.scrollTop = 0;
+  seqEl.scrollTop = 0;
+  startTimer();
+}
+
+// Select / deselect a card
+function selectCard(id) {
+  if (complete || simRunning) return;
+  selected = selected === id ? null : id;
+  sfxSelect();
+  document.querySelectorAll('.card').forEach(el => {
+    el.setAttribute('aria-pressed', String(el.dataset.id === selected));
+  });
+}
+
+// Place a card into target ('bank' or slot index 0..20)
+function place(id, target) {
+  if (complete || simRunning || !STEPS.some(s => s.id === id)) return;
+  const source = slots.indexOf(id);
+  const bankIndex = bank.indexOf(id);
+
+  if (target === 'bank') {
+    if (source < 0) return;
+    slots[source] = null;
+    bank.push(id);
+  } else {
+    if (!Number.isInteger(target) || target < 0 || target >= slots.length) return;
+    const displaced = slots[target];
+    if (source === target) return;
+    if (source >= 0) {
+      slots[source] = displaced;
+    } else {
+      bank.splice(bankIndex, 1);
+      if (displaced) bank.push(displaced);
+    }
+    slots[target] = id;
+  }
+
+  selected = null;
+  sfxPlace();
+  setMessage('');
+  render();
+
+  // Live preview of placed step in Kitchen Cam
+  if (target !== 'bank') {
+    resetKitchenVisuals();
+    for (let i = 0; i <= target; i++) {
+      if (slots[i]) applyStepVisual(slots[i]);
+    }
+    const stepObj = STEPS.find(s => s.id === id);
+    setSpeech(`Placed at #${target + 1}: "${stepObj.text}"`, '', '🧑‍🍳', `${slots.filter(Boolean).length}/21 placed`);
+  }
+}
+
+// Quick-place unplaced card into the first open slot
+function quickPlaceNextOpen(id) {
+  if (complete || simRunning) return;
+  const nextEmpty = slots.indexOf(null);
+  if (nextEmpty !== -1) {
+    place(id, nextEmpty);
+    const row = seqEl.children[nextEmpty];
+    if (row) row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
+// Swap adjacent placed slots
+function nudgeSlot(slotIndex, delta) {
+  if (complete || simRunning) return;
+  const targetIndex = slotIndex + delta;
+  if (targetIndex < 0 || targetIndex >= slots.length) return;
+  const temp = slots[slotIndex];
+  slots[slotIndex] = slots[targetIndex];
+  slots[targetIndex] = temp;
+  sfxPlace();
+  render();
+}
+
+// Build a card DOM element
+function createCardElement(id, slotIndex = -1) {
+  const step = STEPS.find(s => s.id === id);
+  const el = document.createElement('div');
+  el.className = 'card';
+  el.draggable = !complete && !simRunning;
+  el.dataset.id = id;
+  el.tabIndex = complete ? -1 : 0;
+  el.setAttribute('role', 'button');
+  el.setAttribute('aria-pressed', String(selected === id));
+
+  const grip = document.createElement('span');
+  grip.className = 'grip';
+  grip.textContent = '⠿';
+  grip.setAttribute('aria-hidden', 'true');
+
+  const text = document.createElement('span');
+  text.className = 'card-text';
+  text.textContent = step.text;
+
+  const actions = document.createElement('div');
+  actions.className = 'card-actions';
+
+  if (!complete) {
+    if (slotIndex === -1) {
+      const addBtn = document.createElement('button');
+      addBtn.type = 'button';
+      addBtn.className = 'mini-btn';
+      addBtn.textContent = '+';
+      addBtn.title = 'Place in next open slot';
+      addBtn.setAttribute('aria-label', `Place "${step.text}" in next open slot`);
+      addBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        quickPlaceNextOpen(id);
+      });
+      actions.append(addBtn);
+    } else {
+      const upBtn = document.createElement('button');
+      upBtn.type = 'button';
+      upBtn.className = 'mini-btn';
+      upBtn.textContent = '▲';
+      upBtn.title = 'Move up one step';
+      upBtn.disabled = slotIndex === 0;
+      upBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        nudgeSlot(slotIndex, -1);
+      });
+
+      const downBtn = document.createElement('button');
+      downBtn.type = 'button';
+      downBtn.className = 'mini-btn';
+      downBtn.textContent = '▼';
+      downBtn.title = 'Move down one step';
+      downBtn.disabled = slotIndex === slots.length - 1;
+      downBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        nudgeSlot(slotIndex, 1);
+      });
+
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'mini-btn';
+      removeBtn.textContent = '✕';
+      removeBtn.title = 'Return to unplaced steps';
+      removeBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        place(id, 'bank');
+      });
+
+      actions.append(upBtn, downBtn, removeBtn);
+    }
+  }
+
+  el.append(grip, text, actions);
+
+  // Interactions
+  el.addEventListener('click', e => {
+    e.stopPropagation();
+    if (suppressClick) {
+      suppressClick = false;
+      return;
+    }
+    selectCard(id);
+  });
+
+  el.addEventListener('dblclick', e => {
+    e.stopPropagation();
+    if (slotIndex === -1) quickPlaceNextOpen(id);
+  });
+
+  el.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      selectCard(id);
+    }
+  });
+
+  el.addEventListener('dragstart', e => {
+    if (complete || simRunning) {
+      e.preventDefault();
+      return;
+    }
+    dragged = id;
+    e.dataTransfer.setData('text/plain', id);
+    e.dataTransfer.effectAllowed = 'move';
+    el.classList.add('dragging');
+  });
+
+  el.addEventListener('dragend', () => {
+    dragged = null;
+    document.querySelectorAll('.over,.dragging').forEach(node => node.classList.remove('over', 'dragging'));
+  });
+
+  el.addEventListener('pointerdown', e => {
+    if (e.target.closest('.mini-btn')) return;
+    startTouch(e, id, el);
+  });
+
+  return el;
+}
+
+// Render workspace
+function render() {
+  const bankScroll = bankEl.scrollTop;
+  const seqScroll = seqEl.scrollTop;
+
+  bankEl.replaceChildren(...bank.map(id => createCardElement(id, -1)));
+  bankEl.classList.toggle('empty', bank.length === 0);
+
+  seqEl.replaceChildren();
+  slots.forEach((id, i) => {
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.dataset.row = i;
+
+    const num = document.createElement('span');
+    num.className = 'number';
+    num.textContent = i + 1;
+
+    const slot = document.createElement('div');
+    slot.className = 'slot' + (id ? '' : ' empty');
+    slot.dataset.slot = i;
+    slot.tabIndex = complete ? -1 : 0;
+    slot.setAttribute('role', 'button');
+    slot.setAttribute('aria-label', `Step ${i + 1}: ${id ? STEPS.find(s => s.id === id).text : 'empty'}`);
+
+    if (id) slot.append(createCardElement(id, i));
+
+    slot.addEventListener('click', () => {
+      if (selected) place(selected, i);
+    });
+
+    slot.addEventListener('keydown', e => {
+      if (e.target === slot && (e.key === 'Enter' || e.key === ' ')) {
+        e.preventDefault();
+        if (selected) {
+          place(selected, i);
+          seqEl.children[i]?.querySelector('.slot')?.focus();
+        }
+      }
+    });
+
+    setupDropTarget(slot, i);
+    row.append(num, slot);
+    seqEl.append(row);
+  });
+
+  const placedCount = slots.filter(Boolean).length;
+  document.getElementById('remaining').textContent = `${bank.length} remaining`;
+  document.getElementById('progress').textContent = `${placedCount} / ${STEPS.length}`;
+  checkBtn.disabled = complete || simRunning || slots.some(s => s === null);
+  hintBtn.disabled = complete || simRunning || hintsLeft <= 0;
+
+  updatePhaseProgress();
+
+  bankEl.scrollTop = bankScroll;
+  seqEl.scrollTop = seqScroll;
+}
+
+// HTML5 Drag & Drop target helper
+function setupDropTarget(el, target) {
+  el.addEventListener('dragover', e => {
+    if (complete || simRunning) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    el.classList.add('over');
+  });
+  el.addEventListener('dragleave', e => {
+    if (!el.contains(e.relatedTarget)) el.classList.remove('over');
+  });
+  el.addEventListener('drop', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    el.classList.remove('over');
+    place(dragged || e.dataTransfer.getData('text/plain'), target);
+  });
+}
+
+// Pointer/Touch Drag Support with Auto-Scroll
+let touch = null;
+let suppressClick = false;
+let autoScrollTimer = null;
+let dragPoint = null;
+
+function stopAutoScroll() {
+  clearInterval(autoScrollTimer);
+  autoScrollTimer = null;
+  dragPoint = null;
+}
+
+function autoScroll() {
+  if (!dragPoint || !touch?.ghost) return;
+  const [x, y] = dragPoint;
+  for (const el of [bankEl, seqEl]) {
+    const r = el.getBoundingClientRect();
+    if (x < r.left || x > r.right || y < r.top || y > r.bottom) continue;
+    const delta = y < r.top + 48 ? -12 : y > r.bottom - 48 ? 12 : 0;
+    if (delta) el.scrollTop += delta;
+  }
+}
+
+function startTouch(e, id, el) {
+  if (complete || simRunning || (e.pointerType === 'mouse' && e.button !== 0)) return;
+  touch = { id, pointer: e.pointerId, x: e.clientX, y: e.clientY, el, ghost: null };
+}
+
+document.addEventListener('pointermove', e => {
+  if (!touch || e.pointerId !== touch.pointer) return;
+  if (!touch.ghost && Math.hypot(e.clientX - touch.x, e.clientY - touch.y) < 9) return;
+  e.preventDefault();
+  if (!touch.ghost) {
+    touch.ghost = touch.el.cloneNode(true);
+    touch.ghost.classList.add('touch-ghost');
+    document.body.append(touch.ghost);
+    touch.el.classList.add('dragging');
+  }
+  dragPoint = [e.clientX, e.clientY];
+  if (!autoScrollTimer) autoScrollTimer = setInterval(autoScroll, 25);
+  touch.ghost.style.left = (e.clientX - 110) + 'px';
+  touch.ghost.style.top = (e.clientY - 26) + 'px';
+  const over = document.elementFromPoint(e.clientX, e.clientY)?.closest('.slot,#bank');
+  document.querySelectorAll('.over').forEach(node => node.classList.remove('over'));
+  over?.classList.add('over');
+}, { passive: false });
+
+function endTouch(e) {
+  if (!touch || e.pointerId !== touch.pointer) return;
+  stopAutoScroll();
+  const moved = !!touch.ghost;
+  const id = touch.id;
+  touch.ghost?.remove();
+  touch.el.classList.remove('dragging');
+  touch = null;
+  document.querySelectorAll('.over').forEach(node => node.classList.remove('over'));
+  if (moved) {
+    suppressClick = true;
+    setTimeout(() => { suppressClick = false; }, 350);
+    const target = document.elementFromPoint(e.clientX, e.clientY)?.closest('.slot,#bank');
+    if (target) {
+      place(id, target === bankEl ? 'bank' : Number(target.dataset.slot));
+    }
+  }
+}
+
+document.addEventListener('pointerup', endTouch);
+document.addEventListener('pointercancel', e => {
+  if (touch && e.pointerId === touch.pointer) {
+    stopAutoScroll();
+    touch.ghost?.remove();
+    touch.el.classList.remove('dragging');
+    touch = null;
+    document.querySelectorAll('.over').forEach(node => node.classList.remove('over'));
+  }
+});
+
+// Bank drop & click-to-return
+setupDropTarget(bankEl, 'bank');
+bankEl.tabIndex = 0;
+bankEl.addEventListener('click', e => {
+  if (e.target === bankEl && selected) place(selected, 'bank');
+});
+bankEl.addEventListener('keydown', e => {
+  if (e.target === bankEl && (e.key === 'Enter' || e.key === ' ')) {
+    e.preventDefault();
+    if (selected) place(selected, 'bank');
+  }
+});
+
+// Hint System: places the first incorrect/empty step in its exact spot
+hintBtn.addEventListener('click', () => {
+  if (complete || simRunning || hintsLeft <= 0) return;
+  const targetIdx = EXPECTED_ORDER.findIndex((expectedId, idx) => slots[idx] !== expectedId);
+  if (targetIdx === -1) return;
+
+  const correctId = EXPECTED_ORDER[targetIdx];
+  place(correctId, targetIdx);
+  hintsLeft--;
+  hintsLeftEl.textContent = hintsLeft;
+  hintBtn.disabled = hintsLeft <= 0;
+
+  const row = seqEl.children[targetIdx];
+  if (row) {
+    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const cardNode = row.querySelector('.card');
+    if (cardNode) cardNode.classList.add('hint-glow');
+  }
+  const stepText = STEPS.find(s => s.id === correctId).text;
+  setSpeech(`Hint used! Step ${targetIdx + 1} is "${stepText}".`, '', '💡', `${hintsLeft} hints left`);
+});
+
+// Diagnosis explanation when a step fails in Simulator mode
+function explainBug(index, actualId, expectedId) {
+  const actualStep = STEPS.find(s => s.id === actualId).text;
+  const expectedStep = STEPS.find(s => s.id === expectedId).text;
+  return `Bug at Step ${index + 1}! You ran "${actualStep}", but Mr. B needed to "${expectedStep}" first.`;
+}
+
+// Run & Check Algorithm
+async function runVerification() {
+  if (slots.some(s => s === null) || complete || simRunning) return;
+
+  attempts++;
+  attemptsEl.textContent = attempts;
+
+  // Classic Strict Mode (instant check, reshuffles on any error)
+  if (mode === 'classic') {
+    const isExact = slots.every((id, i) => id === EXPECTED_ORDER[i]);
+    if (isExact) {
+      handleWin();
+    } else {
+      sfxError();
+      const ws = document.getElementById('workspace');
+      ws.classList.remove('shake-panel');
+      void ws.offsetWidth;
+      ws.classList.add('shake-panel');
+      showFailVisual('💥');
+      reset(true);
+      setMessage('Incorrect — at least one step was out of order! Cards shuffled back.', 'error');
+      setSpeech('Strict Mode: One wrong step crashed the algorithm, so everything reset!', 'error', '😵', 'Algorithm Failed');
+    }
+    return;
+  }
+
+  // Kitchen Simulator Mode (steps through sequentially!)
+  simRunning = true;
+  checkBtn.disabled = true;
+  hintBtn.disabled = true;
+  resetBtn.disabled = true;
+  setMessage('Running algorithm step-by-step...', '');
+  resetKitchenVisuals();
+
+  const rows = Array.from(seqEl.children);
+  rows.forEach(r => r.classList.remove('sim-running', 'sim-ok', 'sim-fail'));
+
+  for (let i = 0; i < EXPECTED_ORDER.length; i++) {
+    const row = rows[i];
+    const actualId = slots[i];
+    const expectedId = EXPECTED_ORDER[i];
+
+    row.classList.add('sim-running');
+    row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    await new Promise(r => setTimeout(r, 230));
+
+    if (actualId === expectedId) {
+      row.classList.remove('sim-running');
+      row.classList.add('sim-ok');
+      applyStepVisual(actualId);
+      if (actualId === "17") sfxPop();
+      else sfxStep();
+      setSpeech(`Step ${i + 1}: ${STEP_MESSAGES[actualId]}`, '', '🧑‍🍳', `Executing Step ${i + 1}/21`);
+    } else {
+      row.classList.remove('sim-running');
+      row.classList.add('sim-fail');
+      sfxError();
+      showFailVisual('⚠️');
+      const bugMsg = explainBug(i, actualId, expectedId);
+      setMessage(`Stopped at Step ${i + 1} — fix the order and run again!`, 'error');
+      setSpeech(bugMsg, 'error', '🤖', `Bug at Step ${i + 1}`);
+      simRunning = false;
+      checkBtn.disabled = false;
+      hintBtn.disabled = hintsLeft <= 0;
+      resetBtn.disabled = false;
+      return;
+    }
+  }
+
+  simRunning = false;
+  resetBtn.disabled = false;
+  handleWin();
+}
+
+function handleWin() {
+  complete = true;
+  selected = null;
+  stopTimer();
+  sfxWin();
+
+  if (bestTimeSeconds === null || timerSeconds < bestTimeSeconds) {
+    bestTimeSeconds = timerSeconds;
+    bestTimeEl.textContent = formatTime(bestTimeSeconds);
+  }
+
+  document.querySelector('main').classList.add('completed');
+  render();
+  setMessage(`🎉 Perfect! All 21 steps executed in ${formatTime(timerSeconds)}!`, 'success');
+  setSpeech('Ka pai! That deterministic algorithm made the best toast ever!', 'success', '🥳', 'Toast Complete!');
+  launchConfetti();
+}
+
+// Mode Toggles
+modeSimBtn.addEventListener('click', () => {
+  if (simRunning) return;
+  mode = 'sim';
+  modeSimBtn.setAttribute('aria-pressed', 'true');
+  modeClassicBtn.setAttribute('aria-pressed', 'false');
+  modeDescEl.textContent = 'Runs your 21 steps live in Mr. B’s kitchen and shows where a bug happens!';
+});
+
+modeClassicBtn.addEventListener('click', () => {
+  if (simRunning) return;
+  mode = 'classic';
+  modeClassicBtn.setAttribute('aria-pressed', 'true');
+  modeSimBtn.setAttribute('aria-pressed', 'false');
+  modeDescEl.textContent = 'All-or-nothing strict check: if even one step is wrong, all 21 cards shuffle back!';
+});
+
+// Sound Toggle
+soundToggleBtn.addEventListener('click', () => {
+  soundOn = !soundOn;
+  soundToggleBtn.setAttribute('aria-pressed', String(soundOn));
+  soundToggleBtn.textContent = soundOn ? '🔊 Sound On' : '🔇 Sound Off';
+  if (soundOn) sfxSelect();
+});
+
+// Buttons & Keyboard Escape
+checkBtn.addEventListener('click', runVerification);
+resetBtn.addEventListener('click', () => reset());
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    selected = null;
+    document.querySelectorAll('.card').forEach(el => el.setAttribute('aria-pressed', 'false'));
+  }
+});
+
+// Lightweight Confetti Celebration
+function launchConfetti() {
+  const canvas = document.getElementById('confetti-canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const colors = ['#2563eb', '#60a5fa', '#ffd84d', '#22c55e', '#1e3a8a'];
+  const pieces = Array.from({ length: 95 }, () => ({
+    x: Math.random() * canvas.width,
+    y: -20 - Math.random() * canvas.height * 0.4,
+    w: 7 + Math.random() * 7,
+    h: 5 + Math.random() * 6,
+    color: colors[Math.floor(Math.random() * colors.length)],
+    vy: 2.5 + Math.random() * 3.5,
+    vx: -2 + Math.random() * 4,
+    rot: Math.random() * Math.PI * 2,
+    vrot: -0.1 + Math.random() * 0.2
+  }));
+
+  let frame = 0;
+  function step() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    pieces.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.rot += p.vrot;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      ctx.restore();
+    });
+    frame++;
+    if (frame < 160) {
+      requestAnimationFrame(step);
+    } else {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  }
+  requestAnimationFrame(step);
+}
+
+// Initialize on load
+window.addEventListener('load', () => {
+  reset();
+});
+</script>
+</body>
+</html>
