@@ -698,41 +698,40 @@
   }
 
   /* Controls Bar */
-  .controls {
+  .panel-controls {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 16px;
-    margin-top: 20px;
-    background: var(--paper);
-    border: 2px solid #cbd5e1;
-    border-radius: 16px;
-    padding: 14px 18px;
-    box-shadow: var(--shadow-sm);
-    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1.5px solid #e2e8f0;
   }
 
   .buttons {
     display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
+    gap: 6px;
+    flex-wrap: nowrap;
     align-items: center;
   }
 
   button.action {
-    border: 2px solid var(--crust-dark);
+    border: 1.5px solid var(--crust-dark);
     background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
     color: #ffffff;
-    border-radius: 11px;
-    padding: 11px 20px;
+    border-radius: 8px;
+    padding: 6px 10px;
     font: inherit;
-    font-size: 14.5px;
+    font-size: 12px;
     font-weight: 800;
     cursor: pointer;
-    box-shadow: 0 3px 0 var(--crust-dark);
+    box-shadow: 0 2px 0 var(--crust-dark);
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    justify-content: center;
+    gap: 4px;
+    white-space: nowrap;
+    flex: 1 1 0;
+    min-width: 0;
     transition: transform 0.1s, filter 0.15s;
   }
 
@@ -776,14 +775,18 @@
   }
 
   .feedback {
-    font-size: 16px;
+    font-size: 14.5px;
     font-weight: 800;
-    min-height: 26px;
+    min-height: 22px;
     margin: 0;
   }
 
   .feedback.error { color: var(--error); }
   .feedback.success { color: var(--success); }
+
+  .phases-bar--footer {
+    margin-top: 14px;
+  }
 
   /* Explanation Footer */
   .explanation {
@@ -886,8 +889,8 @@
     .number { font-size: 11px; height: 24px; }
     .bank, .sequence { height: 54vh; min-height: 340px; }
     .touch-ghost { width: 220px; }
-    .controls { flex-direction: column; align-items: stretch; }
-    .buttons { justify-content: center; }
+    .buttons { gap: 4px; }
+    .buttons button.action { padding: 5px 6px; font-size: 11px; }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -1031,12 +1034,16 @@
     </aside>
   </div>
 
-  <!-- 4 Algorithm Phases -->
-  <div class="phases-bar" aria-label="Algorithm phases progress">
-    <div class="phase-chip" id="phase-1"><span>1. Setup &amp; Bread</span><span class="phase-count" id="phase-1-count">0/6</span></div>
-    <div class="phase-chip" id="phase-2"><span>2. Toasting</span><span class="phase-count" id="phase-2-count">0/5</span></div>
-    <div class="phase-chip" id="phase-3"><span>3. Buttering</span><span class="phase-count" id="phase-3-count">0/6</span></div>
-    <div class="phase-chip" id="phase-4"><span>4. Tidy &amp; Eat</span><span class="phase-count" id="phase-4-count">0/4</span></div>
+  <!-- Action Controls in Phase Strip Location -->
+  <div class="phases-bar" aria-label="Algorithm actions">
+    <div class="panel-controls" style="grid-column: 1 / -1; margin: 0; padding: 10px 14px; border: 1.5px solid var(--line); border-radius: 14px; background: var(--paper); box-shadow: var(--shadow-sm);">
+      <div class="buttons">
+        <button class="action" id="check" disabled>▶ Run &amp; Check Order</button>
+        <button class="action hint-btn" id="hint-btn">💡 Hint (<span id="hints-left">3</span>)</button>
+        <button class="action secondary" id="reset">🔄 Shuffle &amp; Restart</button>
+      </div>
+      <p id="feedback" class="feedback" role="status" aria-live="polite" aria-atomic="true"></p>
+    </div>
   </div>
 
   <!-- Main Workspace -->
@@ -1060,14 +1067,12 @@
     </section>
   </div>
 
-  <!-- Action Controls -->
-  <div class="controls">
-    <div class="buttons">
-      <button class="action" id="check" disabled>▶ Run &amp; Check Order</button>
-      <button class="action hint-btn" id="hint-btn">💡 Hint (<span id="hints-left">3</span>)</button>
-      <button class="action secondary" id="reset">🔄 Shuffle &amp; Restart</button>
-    </div>
-    <p id="feedback" class="feedback" role="status" aria-live="polite" aria-atomic="true"></p>
+  <!-- 4 Algorithm Phases Under Algorithm -->
+  <div class="phases-bar" aria-label="Algorithm phases progress">
+    <div class="phase-chip" id="phase-1"><span>1. Setup &amp; Bread</span><span class="phase-count" id="phase-1-count">0/6</span></div>
+    <div class="phase-chip" id="phase-2"><span>2. Toasting</span><span class="phase-count" id="phase-2-count">0/5</span></div>
+    <div class="phase-chip" id="phase-3"><span>3. Buttering</span><span class="phase-count" id="phase-3-count">0/6</span></div>
+    <div class="phase-chip" id="phase-4"><span>4. Tidy &amp; Eat</span><span class="phase-count" id="phase-4-count">0/4</span></div>
   </div>
 
   <section class="explanation" aria-labelledby="why-title">
@@ -1846,7 +1851,8 @@ async function runVerification() {
     const expectedId = EXPECTED_ORDER[i];
 
     row.classList.add('sim-running');
-    row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    const rowTop = row.offsetTop - seqEl.offsetTop;
+    seqEl.scrollTo({ top: Math.max(0, rowTop - seqEl.clientHeight / 2 + row.clientHeight / 2), behavior: 'smooth' });
 
     await new Promise(r => setTimeout(r, 230));
 
